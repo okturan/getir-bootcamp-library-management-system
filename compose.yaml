@@ -1,9 +1,14 @@
-services:
-  postgres:
-    image: 'postgres:latest'
-    environment:
-      - 'POSTGRES_DB=mydatabase'
-      - 'POSTGRES_PASSWORD=secret'
-      - 'POSTGRES_USER=myuser'
-    ports:
-      - '5432'
+# Docker Compose configuration for PostgreSQL
+# This configuration is currently disabled in favor of using H2 database for development
+# To re-enable PostgreSQL, set spring.docker.compose.enabled=true in application.properties
+# and uncomment the services section below
+
+#services:
+#  postgres:
+#    image: 'postgres:latest'
+#    environment:
+#      - 'POSTGRES_DB=mydatabase'
+#      - 'POSTGRES_PASSWORD=secret'
+#      - 'POSTGRES_USER=myuser'
+#    ports:
+#      - '5432'
