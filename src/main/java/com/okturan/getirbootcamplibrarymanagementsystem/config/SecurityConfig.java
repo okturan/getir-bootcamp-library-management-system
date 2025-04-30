@@ -12,6 +12,7 @@ import org.springframework.security.authentication.dao.DaoAuthenticationProvider
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -64,6 +65,7 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable()) // Disable CSRF for dev
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        // Public endpoints
                         .requestMatchers("/h2-console/**").permitAll() // Allow H2 Console
                         .requestMatchers("/swagger-ui.html").permitAll() // Allow Swagger UI
                         .requestMatchers("/swagger-ui/**").permitAll() // Allow Swagger UI resources
@@ -72,6 +74,19 @@ public class SecurityConfig {
                         .requestMatchers("/v3/api-docs/**").permitAll() // Allow OpenAPI docs
                         .requestMatchers("/v3/api-docs.yaml").permitAll() // Allow OpenAPI YAML
                         .requestMatchers("/api/auth/**").permitAll() // Allow authentication endpoints
+
+                        // Admin-only endpoints
+                        .requestMatchers("/api/books/admin/**").hasAuthority("ROLE_ADMIN")
+
+                        // Admin and Librarian endpoints
+                        .requestMatchers(HttpMethod.POST, "/api/books/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_LIBRARIAN")
+                        .requestMatchers(HttpMethod.PUT, "/api/books/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_LIBRARIAN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/books/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_LIBRARIAN")
+
+                        // All authenticated users (including patrons) can access read-only endpoints
+                        .requestMatchers(HttpMethod.GET, "/api/books/**").authenticated()
+
+                        // Any other request requires authentication
                         .anyRequest().authenticated()
                 )
                 .exceptionHandling(exceptions -> exceptions

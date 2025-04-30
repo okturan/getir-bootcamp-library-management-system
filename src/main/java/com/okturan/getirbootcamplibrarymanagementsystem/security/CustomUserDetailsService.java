@@ -1,5 +1,6 @@
 package com.okturan.getirbootcamplibrarymanagementsystem.security;
 
+import com.okturan.getirbootcamplibrarymanagementsystem.model.Role;
 import com.okturan.getirbootcamplibrarymanagementsystem.model.User;
 import com.okturan.getirbootcamplibrarymanagementsystem.repository.UserRepository;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -32,7 +33,7 @@ public class CustomUserDetailsService implements UserDetailsService {
     private UserDetails buildUserDetails(User user) {
         // Convert our roles to Spring Security SimpleGrantedAuthority objects
         var authorities = user.getRoles().stream()
-                .map(SimpleGrantedAuthority::new)
+                .map(role -> new SimpleGrantedAuthority(role.getAuthority()))
                 .collect(Collectors.toList());
 
         // Create and return a UserDetails object

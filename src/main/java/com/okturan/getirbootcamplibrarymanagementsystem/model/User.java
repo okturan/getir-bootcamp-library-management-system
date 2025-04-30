@@ -30,8 +30,9 @@ public class User {
 
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id"))
+    @Enumerated(EnumType.STRING)
     @Column(name = "role")
-    private Set<String> roles = new HashSet<>();
+    private Set<Role> roles = new HashSet<>();
 
     private boolean active = true;
 
@@ -40,16 +41,17 @@ public class User {
         this.username = username;
         this.password = password;
         this.email = email;
-        this.roles.add("ROLE_USER"); // Default role
+        this.roles.add(Role.PATRON); // Default role is patron
     }
 
     // Add a role to the user
-    public void addRole(String role) {
+    public void addRole(Role role) {
         this.roles.add(role);
     }
 
     // Check if user has a specific role
-    public boolean hasRole(String role) {
+    public boolean hasRole(Role role) {
         return this.roles.contains(role);
     }
+
 }

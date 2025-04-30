@@ -11,6 +11,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -22,6 +24,8 @@ import java.util.List;
 @RequestMapping("/api/books")
 @Tag(name = "Book Management", description = "Operations for managing books in the library system")
 public class BookController {
+
+    private static final Logger logger = LoggerFactory.getLogger(BookController.class);
 
     private final BookService bookService;
 
@@ -42,8 +46,15 @@ public class BookController {
     public ResponseEntity<BookResponseDTO> createBook(
             @Parameter(description = "Book data to create", required = true)
             @Valid @RequestBody BookRequestDTO bookRequestDTO) {
-        BookResponseDTO createdBook = bookService.createBook(bookRequestDTO);
-        return new ResponseEntity<>(createdBook, HttpStatus.CREATED);
+        logger.info("Creating new book with title: '{}', ISBN: {}", bookRequestDTO.getTitle(), bookRequestDTO.getIsbn());
+        try {
+            BookResponseDTO createdBook = bookService.createBook(bookRequestDTO);
+            logger.info("Book created successfully with ID: {}, title: '{}'", createdBook.getId(), createdBook.getTitle());
+            return new ResponseEntity<>(createdBook, HttpStatus.CREATED);
+        } catch (Exception e) {
+            logger.error("Failed to create book with ISBN: {}", bookRequestDTO.getIsbn(), e);
+            throw e;
+        }
     }
 
     @GetMapping("/{id}")
@@ -57,8 +68,15 @@ public class BookController {
     public ResponseEntity<BookResponseDTO> getBookById(
             @Parameter(description = "ID of the book to retrieve", required = true)
             @PathVariable Long id) {
-        BookResponseDTO book = bookService.getBookById(id);
-        return ResponseEntity.ok(book);
+        logger.info("Retrieving book with ID: {}", id);
+        try {
+            BookResponseDTO book = bookService.getBookById(id);
+            logger.debug("Book found: ID: {}, title: '{}'", book.getId(), book.getTitle());
+            return ResponseEntity.ok(book);
+        } catch (Exception e) {
+            logger.error("Failed to retrieve book with ID: {}", id, e);
+            throw e;
+        }
     }
 
     @GetMapping("/isbn/{isbn}")
@@ -72,8 +90,15 @@ public class BookController {
     public ResponseEntity<BookResponseDTO> getBookByIsbn(
             @Parameter(description = "ISBN of the book to retrieve", required = true)
             @PathVariable String isbn) {
-        BookResponseDTO book = bookService.getBookByIsbn(isbn);
-        return ResponseEntity.ok(book);
+        logger.info("Retrieving book with ISBN: {}", isbn);
+        try {
+            BookResponseDTO book = bookService.getBookByIsbn(isbn);
+            logger.debug("Book found: ID: {}, title: '{}', ISBN: {}", book.getId(), book.getTitle(), book.getIsbn());
+            return ResponseEntity.ok(book);
+        } catch (Exception e) {
+            logger.error("Failed to retrieve book with ISBN: {}", isbn, e);
+            throw e;
+        }
     }
 
     @GetMapping
@@ -82,8 +107,15 @@ public class BookController {
             content = @Content(mediaType = "application/json", 
             schema = @Schema(implementation = BookResponseDTO.class)))
     public ResponseEntity<List<BookResponseDTO>> getAllBooks() {
-        List<BookResponseDTO> books = bookService.getAllBooks();
-        return ResponseEntity.ok(books);
+        logger.info("Retrieving all books");
+        try {
+            List<BookResponseDTO> books = bookService.getAllBooks();
+            logger.debug("Retrieved {} books", books.size());
+            return ResponseEntity.ok(books);
+        } catch (Exception e) {
+            logger.error("Failed to retrieve all books", e);
+            throw e;
+        }
     }
 
     @PutMapping("/{id}")
@@ -101,8 +133,15 @@ public class BookController {
             @PathVariable Long id,
             @Parameter(description = "Updated book data", required = true)
             @Valid @RequestBody BookRequestDTO bookRequestDTO) {
-        BookResponseDTO updatedBook = bookService.updateBook(id, bookRequestDTO);
-        return ResponseEntity.ok(updatedBook);
+        logger.info("Updating book with ID: {}, new title: '{}'", id, bookRequestDTO.getTitle());
+        try {
+            BookResponseDTO updatedBook = bookService.updateBook(id, bookRequestDTO);
+            logger.info("Book updated successfully: ID: {}, title: '{}'", updatedBook.getId(), updatedBook.getTitle());
+            return ResponseEntity.ok(updatedBook);
+        } catch (Exception e) {
+            logger.error("Failed to update book with ID: {}", id, e);
+            throw e;
+        }
     }
 
     @DeleteMapping("/{id}")
@@ -114,8 +153,15 @@ public class BookController {
     public ResponseEntity<Void> deleteBook(
             @Parameter(description = "ID of the book to delete", required = true)
             @PathVariable Long id) {
-        bookService.deleteBook(id);
-        return ResponseEntity.noContent().build();
+        logger.info("Deleting book with ID: {}", id);
+        try {
+            bookService.deleteBook(id);
+            logger.info("Book deleted successfully: ID: {}", id);
+            return ResponseEntity.noContent().build();
+        } catch (Exception e) {
+            logger.error("Failed to delete book with ID: {}", id, e);
+            throw e;
+        }
     }
 
     @GetMapping("/search/author")
@@ -126,8 +172,15 @@ public class BookController {
     public ResponseEntity<List<BookResponseDTO>> findBooksByAuthor(
             @Parameter(description = "Author name to search for", required = true)
             @RequestParam String author) {
-        List<BookResponseDTO> books = bookService.findBooksByAuthor(author);
-        return ResponseEntity.ok(books);
+        logger.info("Searching for books by author: '{}'", author);
+        try {
+            List<BookResponseDTO> books = bookService.findBooksByAuthor(author);
+            logger.debug("Found {} books by author: '{}'", books.size(), author);
+            return ResponseEntity.ok(books);
+        } catch (Exception e) {
+            logger.error("Failed to search books by author: '{}'", author, e);
+            throw e;
+        }
     }
 
     @GetMapping("/search/title")
@@ -138,8 +191,15 @@ public class BookController {
     public ResponseEntity<List<BookResponseDTO>> findBooksByTitle(
             @Parameter(description = "Title to search for", required = true)
             @RequestParam String title) {
-        List<BookResponseDTO> books = bookService.findBooksByTitle(title);
-        return ResponseEntity.ok(books);
+        logger.info("Searching for books by title: '{}'", title);
+        try {
+            List<BookResponseDTO> books = bookService.findBooksByTitle(title);
+            logger.debug("Found {} books with title containing: '{}'", books.size(), title);
+            return ResponseEntity.ok(books);
+        } catch (Exception e) {
+            logger.error("Failed to search books by title: '{}'", title, e);
+            throw e;
+        }
     }
 
     @GetMapping("/search/genre")
@@ -150,8 +210,15 @@ public class BookController {
     public ResponseEntity<List<BookResponseDTO>> findBooksByGenre(
             @Parameter(description = "Genre to search for", required = true)
             @RequestParam String genre) {
-        List<BookResponseDTO> books = bookService.findBooksByGenre(genre);
-        return ResponseEntity.ok(books);
+        logger.info("Searching for books by genre: '{}'", genre);
+        try {
+            List<BookResponseDTO> books = bookService.findBooksByGenre(genre);
+            logger.debug("Found {} books in genre: '{}'", books.size(), genre);
+            return ResponseEntity.ok(books);
+        } catch (Exception e) {
+            logger.error("Failed to search books by genre: '{}'", genre, e);
+            throw e;
+        }
     }
 
     @GetMapping("/search/available")
@@ -162,7 +229,32 @@ public class BookController {
     public ResponseEntity<List<BookResponseDTO>> findBooksByAvailability(
             @Parameter(description = "Availability status to filter by", required = true)
             @RequestParam boolean available) {
-        List<BookResponseDTO> books = bookService.findBooksByAvailability(available);
-        return ResponseEntity.ok(books);
+        logger.info("Searching for books by availability: {}", available);
+        try {
+            List<BookResponseDTO> books = bookService.findBooksByAvailability(available);
+            logger.debug("Found {} books with availability status: {}", books.size(), available);
+            return ResponseEntity.ok(books);
+        } catch (Exception e) {
+            logger.error("Failed to search books by availability: {}", available, e);
+            throw e;
+        }
+    }
+
+    // Admin-only endpoints
+    @GetMapping("/admin/stats")
+    @Operation(summary = "Get library statistics", description = "Returns statistics about the library (Admin only)")
+    @ApiResponse(responseCode = "200", description = "Statistics retrieved successfully")
+    public ResponseEntity<String> getLibraryStats() {
+        logger.info("Admin retrieving library statistics");
+        try {
+            // This is a placeholder for actual statistics logic
+            // In a real implementation, this would call a service method to get statistics
+            String stats = "Total books: " + bookService.getAllBooks().size();
+            logger.debug("Library statistics retrieved successfully");
+            return ResponseEntity.ok(stats);
+        } catch (Exception e) {
+            logger.error("Failed to retrieve library statistics", e);
+            throw e;
+        }
     }
 }

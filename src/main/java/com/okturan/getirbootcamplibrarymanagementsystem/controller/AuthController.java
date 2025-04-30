@@ -13,6 +13,8 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -29,6 +31,8 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/auth")
 @Tag(name = "Authentication", description = "Authentication API")
 public class AuthController {
+
+    private static final Logger logger = LoggerFactory.getLogger(AuthController.class);
 
     private final JwtTokenProvider tokenProvider;
     private final AuthenticationManager authenticationManager;
@@ -51,8 +55,11 @@ public class AuthController {
             content = @Content(mediaType = "application/json",
                     schema = @Schema(implementation = ErrorResponse.class)))
     public ResponseEntity<?> register(@Valid @RequestBody UserRegistrationDTO registrationDTO) {
+        logger.info("Registration attempt for username: {}", registrationDTO.getUsername());
+
         // Check if username already exists
         if (userService.existsByUsername(registrationDTO.getUsername())) {
+            logger.warn("Registration failed: Username '{}' is already taken", registrationDTO.getUsername());
             ErrorResponse errorResponse = new ErrorResponse(
                     HttpStatus.BAD_REQUEST.value(),
                     "Username is already taken",
@@ -65,6 +72,7 @@ public class AuthController {
 
         // Check if email already exists
         if (userService.existsByEmail(registrationDTO.getEmail())) {
+            logger.warn("Registration failed: Email '{}' is already in use", registrationDTO.getEmail());
             ErrorResponse errorResponse = new ErrorResponse(
                     HttpStatus.BAD_REQUEST.value(),
                     "Email is already in use",
@@ -75,6 +83,7 @@ public class AuthController {
                     .body(errorResponse);
         }
 
+        logger.debug("Creating new user with username: {}", registrationDTO.getUsername());
         // Create new user
         User user = new User(
                 registrationDTO.getUsername(),
@@ -82,36 +91,54 @@ public class AuthController {
                 registrationDTO.getEmail()
         );
 
+        // Set role if specified, otherwise default to PATRON (handled in User constructor)
+        if (registrationDTO.getRole() != null) {
+            // Clear default role and set the specified one
+            user.getRoles().clear();
+            user.addRole(registrationDTO.getRole());
+            logger.debug("Setting user role to: {}", registrationDTO.getRole());
+        }
+
         // Save user
         User savedUser = userService.registerUser(user);
+        logger.info("User registered successfully: {}", savedUser.getUsername());
 
-        // Authenticate user
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        registrationDTO.getUsername(),
-                        registrationDTO.getPassword()
-                )
-        );
+        try {
+            // Authenticate user
+            logger.debug("Authenticating newly registered user: {}", savedUser.getUsername());
+            Authentication authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(
+                            registrationDTO.getUsername(),
+                            registrationDTO.getPassword()
+                    )
+            );
 
-        SecurityContextHolder.getContext().setAuthentication(authentication);
-        String jwt = tokenProvider.createToken(authentication);
+            SecurityContextHolder.getContext().setAuthentication(authentication);
+            String jwt = tokenProvider.createToken(authentication);
+            logger.debug("JWT token generated for user: {}", savedUser.getUsername());
 
-        // Return JWT
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(new JwtResponseDTO(jwt, savedUser.getUsername()));
+            // Return JWT
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .body(new JwtResponseDTO(jwt, savedUser.getUsername()));
+        } catch (AuthenticationException e) {
+            logger.error("Failed to authenticate newly registered user: {}", savedUser.getUsername(), e);
+            throw e;
+        }
     }
 
     @PostMapping("/login")
     @Operation(summary = "Login to get JWT token", description = "Provides a JWT token for API access")
     @ApiResponse(responseCode = "200", description = "Login successful",
-            content = @Content(mediaType = "application/json",
+                    content = @Content(mediaType = "application/json",
                     schema = @Schema(implementation = JwtResponseDTO.class)))
     @ApiResponse(responseCode = "401", description = "Invalid credentials",
             content = @Content(mediaType = "application/json",
                     schema = @Schema(implementation = ErrorResponse.class)))
     public ResponseEntity<?> login(@Valid @RequestBody LoginDTO loginDTO) {
+        logger.info("Login attempt for username: {}", loginDTO.getUsername());
         try {
             // Authenticate user
+            logger.debug("Attempting to authenticate user: {}", loginDTO.getUsername());
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
                             loginDTO.getUsername(),
@@ -121,13 +148,17 @@ public class AuthController {
 
             // Set authentication in security context
             SecurityContextHolder.getContext().setAuthentication(authentication);
+            logger.debug("Authentication set in security context for user: {}", loginDTO.getUsername());
 
             // Generate token
             String jwt = tokenProvider.createToken(authentication);
+            logger.debug("JWT token generated for user: {}", loginDTO.getUsername());
 
             // Return the token
+            logger.info("Login successful for user: {}", loginDTO.getUsername());
             return ResponseEntity.ok(new JwtResponseDTO(jwt, loginDTO.getUsername()));
         } catch (AuthenticationException e) {
+            logger.warn("Login failed for username: {} - Invalid credentials", loginDTO.getUsername());
             ErrorResponse errorResponse = new ErrorResponse(
                     HttpStatus.UNAUTHORIZED.value(),
                     "Invalid username or password",
