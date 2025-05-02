@@ -34,7 +34,6 @@ public class BorrowingServiceImpl implements BorrowingService {
     private final BookRepository bookRepository;
     private final UserRepository userRepository;
 
-    @Autowired
     public BorrowingServiceImpl(BorrowingRepository borrowingRepository, BookRepository bookRepository, UserRepository userRepository) {
         this.borrowingRepository = borrowingRepository;
         this.bookRepository = bookRepository;

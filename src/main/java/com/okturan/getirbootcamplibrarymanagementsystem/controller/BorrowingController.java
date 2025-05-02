@@ -12,9 +12,10 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -25,16 +26,12 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/borrowings")
 @Tag(name = "Borrowing", description = "Borrowing management APIs")
+@RequiredArgsConstructor
 public class BorrowingController {
 
     private static final Logger logger = LoggerFactory.getLogger(BorrowingController.class);
 
     private final BorrowingService borrowingService;
-
-    @Autowired
-    public BorrowingController(BorrowingService borrowingService) {
-        this.borrowingService = borrowingService;
-    }
 
     @PostMapping("/borrow")
     @Operation(summary = "Borrow a book", description = "Borrow a book for the current user")
