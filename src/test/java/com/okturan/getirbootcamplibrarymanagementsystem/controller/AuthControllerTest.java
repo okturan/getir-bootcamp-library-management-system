@@ -162,4 +162,22 @@ public class AuthControllerTest {
                 .andExpect(jsonPath("$.status").value(401))
                 .andExpect(jsonPath("$.message").value("Invalid username or password"));
     }
+
+    @Test
+    void register_ShouldReturnForbidden_WhenUnauthenticatedUserTriesToCreateAdminAccount() throws Exception {
+        // Arrange
+        UserRegistrationDTO adminRegistrationDTO = new UserRegistrationDTO();
+        adminRegistrationDTO.setUsername("adminuser");
+        adminRegistrationDTO.setEmail("admin@example.com");
+        adminRegistrationDTO.setPassword("password");
+        adminRegistrationDTO.setRole(Role.ADMIN);
+
+        // Act & Assert
+        mockMvc.perform(post("/api/auth/register")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(adminRegistrationDTO)))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.status").value(403))
+                .andExpect(jsonPath("$.message").value("Only administrators can create librarian or admin accounts"));
+    }
 }

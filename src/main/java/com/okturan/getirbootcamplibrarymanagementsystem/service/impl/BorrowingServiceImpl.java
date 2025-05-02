@@ -12,6 +12,8 @@ import com.okturan.getirbootcamplibrarymanagementsystem.repository.BorrowingRepo
 import com.okturan.getirbootcamplibrarymanagementsystem.repository.UserRepository;
 import com.okturan.getirbootcamplibrarymanagementsystem.service.BorrowingService;
 import jakarta.persistence.EntityNotFoundException;
+import lombok.RequiredArgsConstructor;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,7 +27,8 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
 
-@Service
+@Service("borrowingService")
+@RequiredArgsConstructor
 public class BorrowingServiceImpl implements BorrowingService {
 
     private static final Logger logger = LoggerFactory.getLogger(BorrowingServiceImpl.class);
@@ -33,12 +36,6 @@ public class BorrowingServiceImpl implements BorrowingService {
     private final BorrowingRepository borrowingRepository;
     private final BookRepository bookRepository;
     private final UserRepository userRepository;
-
-    public BorrowingServiceImpl(BorrowingRepository borrowingRepository, BookRepository bookRepository, UserRepository userRepository) {
-        this.borrowingRepository = borrowingRepository;
-        this.bookRepository = bookRepository;
-        this.userRepository = userRepository;
-    }
 
     @Override
     @Transactional
@@ -117,12 +114,6 @@ public class BorrowingServiceImpl implements BorrowingService {
         Borrowing borrowing = borrowingRepository.findById(borrowingId)
                 .orElseThrow(() -> new EntityNotFoundException("Borrowing not found with ID: " + borrowingId));
 
-        // Check if the borrowing belongs to the current user or if the user is a librarian/admin
-        if (!borrowing.getUser().getId().equals(user.getId()) && 
-                !user.hasRole(Role.LIBRARIAN) && !user.hasRole(Role.ADMIN)) {
-            throw new AccessDeniedException("You are not authorized to return this book");
-        }
-
         // Check if the book is already returned
         if (borrowing.isReturned()) {
             throw new IllegalStateException("Book is already returned");
@@ -152,12 +143,6 @@ public class BorrowingServiceImpl implements BorrowingService {
         Borrowing borrowing = borrowingRepository.findById(borrowingId)
                 .orElseThrow(() -> new EntityNotFoundException("Borrowing not found with ID: " + borrowingId));
 
-        // Check if the borrowing belongs to the current user or if the user is a librarian/admin
-        if (!borrowing.getUser().getId().equals(user.getId()) && 
-                !user.hasRole(Role.LIBRARIAN) && !user.hasRole(Role.ADMIN)) {
-            throw new AccessDeniedException("You are not authorized to view this borrowing");
-        }
-
         return mapToDTO(borrowing);
     }
 
@@ -178,11 +163,6 @@ public class BorrowingServiceImpl implements BorrowingService {
         // Get the current user
         User currentUser = getCurrentUser();
 
-        // Check if the current user is a librarian or admin
-        if (!currentUser.hasRole(Role.LIBRARIAN) && !currentUser.hasRole(Role.ADMIN)) {
-            throw new AccessDeniedException("You are not authorized to view other users' borrowing history");
-        }
-
         // Get the user
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new EntityNotFoundException("User not found with ID: " + userId));
@@ -196,11 +176,6 @@ public class BorrowingServiceImpl implements BorrowingService {
 
         // Get the current user
         User currentUser = getCurrentUser();
-
-        // Check if the current user is a librarian or admin
-        if (!currentUser.hasRole(Role.LIBRARIAN) && !currentUser.hasRole(Role.ADMIN)) {
-            throw new AccessDeniedException("You are not authorized to view all active borrowings");
-        }
 
         // Get all active borrowings
         List<Borrowing> borrowings = borrowingRepository.findByReturned(false);
@@ -217,11 +192,6 @@ public class BorrowingServiceImpl implements BorrowingService {
         // Get the current user
         User currentUser = getCurrentUser();
 
-        // Check if the current user is a librarian or admin
-        if (!currentUser.hasRole(Role.LIBRARIAN) && !currentUser.hasRole(Role.ADMIN)) {
-            throw new AccessDeniedException("You are not authorized to view overdue borrowings");
-        }
-
         // Get all overdue borrowings
         List<Borrowing> borrowings = borrowingRepository.findByDueDateBeforeAndReturned(LocalDate.now(), false);
 
@@ -230,11 +200,18 @@ public class BorrowingServiceImpl implements BorrowingService {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Get the current authenticated user.
-     *
-     * @return the current user
-     */
+    @Override
+    public boolean isOwner(Long borrowingId, String username) {
+        logger.info("Checking if user {} is the owner of borrowing {}", username, borrowingId);
+
+        // Find the borrowing
+        Borrowing borrowing = borrowingRepository.findById(borrowingId)
+                .orElseThrow(() -> new EntityNotFoundException("Borrowing not found with ID: " + borrowingId));
+
+        // Check if the username matches the borrowing's user's username
+        return borrowing.getUser().getUsername().equals(username);
+    }
+
     private User getCurrentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String username = authentication.getName();
@@ -243,12 +220,6 @@ public class BorrowingServiceImpl implements BorrowingService {
                 .orElseThrow(() -> new EntityNotFoundException("User not found with username: " + username));
     }
 
-    /**
-     * Get borrowing history for a user.
-     *
-     * @param user the user
-     * @return the borrowing history
-     */
     private BorrowingHistoryDTO getUserBorrowingHistoryInternal(User user) {
         // Get all borrowings for the user
         List<Borrowing> borrowings = borrowingRepository.findByUser(user);
@@ -279,12 +250,6 @@ public class BorrowingServiceImpl implements BorrowingService {
         return historyDTO;
     }
 
-    /**
-     * Map a Borrowing entity to a BorrowingResponseDTO.
-     *
-     * @param borrowing the borrowing entity
-     * @return the borrowing response DTO
-     */
     private BorrowingResponseDTO mapToDTO(Borrowing borrowing) {
         BorrowingResponseDTO dto = new BorrowingResponseDTO();
         dto.setId(borrowing.getId());

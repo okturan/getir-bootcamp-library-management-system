@@ -17,6 +17,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -32,6 +33,7 @@ public class BookController {
     private final BookService bookService;
 
     @PostMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'LIBRARIAN')")
     @Operation(summary = "Create a new book", description = "Creates a new book in the library system")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "201", description = "Book created successfully",
@@ -116,6 +118,7 @@ public class BookController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'LIBRARIAN')")
     @Operation(summary = "Update a book", description = "Updates an existing book by its ID")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Book updated successfully",
@@ -142,6 +145,7 @@ public class BookController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'LIBRARIAN')")
     @Operation(summary = "Delete a book", description = "Deletes a book by its ID")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "204", description = "Book deleted successfully"),
@@ -239,6 +243,7 @@ public class BookController {
 
     // Admin-only endpoints
     @GetMapping("/admin/stats")
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Get library statistics", description = "Returns statistics about the library (Admin only)")
     @ApiResponse(responseCode = "200", description = "Statistics retrieved successfully")
     public ResponseEntity<String> getLibraryStats() {

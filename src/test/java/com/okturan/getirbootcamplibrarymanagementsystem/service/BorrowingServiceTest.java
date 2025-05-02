@@ -286,21 +286,8 @@ public class BorrowingServiceTest {
         assertThrows(EntityNotFoundException.class, () -> borrowingService.returnBook(1L));
     }
 
-    @Test
-    void returnBook_NotAuthorized() {
-        // Arrange
-        User otherUser = new User("other", "password", "other@example.com");
-        otherUser.setId(3L);
-
-        borrowing.setUser(otherUser);
-
-        when(authentication.getName()).thenReturn("patron");
-        when(userRepository.findByUsername("patron")).thenReturn(Optional.of(patron));
-        when(borrowingRepository.findById(1L)).thenReturn(Optional.of(borrowing));
-
-        // Act & Assert
-        assertThrows(AccessDeniedException.class, () -> borrowingService.returnBook(1L));
-    }
+    // This test is no longer needed as authorization is now handled at the controller level
+    // with @PreAuthorize annotations
 
     @Test
     void returnBook_AlreadyReturned() {
@@ -361,15 +348,8 @@ public class BorrowingServiceTest {
         assertEquals(1, result.getBorrowings().size());
     }
 
-    @Test
-    void getUserBorrowingHistory_NotAuthorized() {
-        // Arrange
-        when(authentication.getName()).thenReturn("patron");
-        when(userRepository.findByUsername("patron")).thenReturn(Optional.of(patron));
-
-        // Act & Assert
-        assertThrows(AccessDeniedException.class, () -> borrowingService.getUserBorrowingHistory(2L));
-    }
+    // This test is no longer needed as authorization is now handled at the controller level
+    // with @PreAuthorize annotations
 
     @Test
     void getAllActiveBorrowings_Success() {
@@ -393,15 +373,8 @@ public class BorrowingServiceTest {
         assertFalse(result.get(0).isReturned());
     }
 
-    @Test
-    void getAllActiveBorrowings_NotAuthorized() {
-        // Arrange
-        when(authentication.getName()).thenReturn("patron");
-        when(userRepository.findByUsername("patron")).thenReturn(Optional.of(patron));
-
-        // Act & Assert
-        assertThrows(AccessDeniedException.class, () -> borrowingService.getAllActiveBorrowings());
-    }
+    // This test is no longer needed as authorization is now handled at the controller level
+    // with @PreAuthorize annotations
 
     @Test
     void getAllOverdueBorrowings_Success() {
@@ -427,13 +400,6 @@ public class BorrowingServiceTest {
         assertTrue(result.get(0).isOverdue());
     }
 
-    @Test
-    void getAllOverdueBorrowings_NotAuthorized() {
-        // Arrange
-        when(authentication.getName()).thenReturn("patron");
-        when(userRepository.findByUsername("patron")).thenReturn(Optional.of(patron));
-
-        // Act & Assert
-        assertThrows(AccessDeniedException.class, () -> borrowingService.getAllOverdueBorrowings());
-    }
+    // This test is no longer needed as authorization is now handled at the controller level
+    // with @PreAuthorize annotations
 }

@@ -34,6 +34,7 @@ public class BorrowingController {
     private final BorrowingService borrowingService;
 
     @PostMapping("/borrow")
+    @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Borrow a book", description = "Borrow a book for the current user")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201", description = "Book borrowed successfully",
@@ -50,6 +51,7 @@ public class BorrowingController {
     }
 
     @PostMapping("/{borrowingId}/return")
+    @PreAuthorize("hasAnyRole('ADMIN', 'LIBRARIAN') or @borrowingService.isOwner(#borrowingId, authentication.principal.username)")
     @Operation(summary = "Return a book", description = "Return a borrowed book")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Book returned successfully",
@@ -67,6 +69,7 @@ public class BorrowingController {
     }
 
     @GetMapping("/{borrowingId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'LIBRARIAN') or @borrowingService.isOwner(#borrowingId, authentication.principal.username)")
     @Operation(summary = "Get borrowing by ID", description = "Get a borrowing by its ID")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Borrowing found",
@@ -83,6 +86,7 @@ public class BorrowingController {
     }
 
     @GetMapping("/history")
+    @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Get current user's borrowing history", description = "Get borrowing history for the current user")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Borrowing history retrieved",
