@@ -1,5 +1,6 @@
 package com.okturan.getirbootcamplibrarymanagementsystem.service.impl;
 
+import com.okturan.getirbootcamplibrarymanagementsystem.dto.BookAvailabilityDTO;
 import com.okturan.getirbootcamplibrarymanagementsystem.dto.BookRequestDTO;
 import com.okturan.getirbootcamplibrarymanagementsystem.dto.BookResponseDTO;
 import com.okturan.getirbootcamplibrarymanagementsystem.model.Book;
@@ -10,7 +11,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Sinks;
+import reactor.core.scheduler.Schedulers;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.stream.Collectors;
 import jakarta.persistence.EntityNotFoundException;
@@ -19,11 +25,14 @@ import jakarta.persistence.EntityNotFoundException;
 public class BookServiceImpl implements BookService {
 
     private static final Logger logger = LoggerFactory.getLogger(BookServiceImpl.class);
+    private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ISO_DATE_TIME;
 
     private final BookRepository bookRepository;
+    private final Sinks.Many<BookAvailabilityDTO> bookAvailabilitySink;
 
     public BookServiceImpl(BookRepository bookRepository) {
         this.bookRepository = bookRepository;
+        this.bookAvailabilitySink = Sinks.many().multicast().onBackpressureBuffer();
     }
 
     @Override
@@ -142,6 +151,9 @@ public class BookServiceImpl implements BookService {
                 }
             }
 
+            // Check if availability is changing
+            boolean availabilityChanged = book.isAvailable() != bookRequestDTO.isAvailable();
+
             // Update book properties
             book.setTitle(bookRequestDTO.getTitle());
             book.setAuthor(bookRequestDTO.getAuthor());
@@ -153,6 +165,14 @@ public class BookServiceImpl implements BookService {
             Book updatedBook = bookRepository.save(book);
             logger.info("Book updated successfully: ID: {}, title: '{}', ISBN: {}", 
                     updatedBook.getId(), updatedBook.getTitle(), updatedBook.getIsbn());
+
+            // If availability changed, emit an update to the sink
+            if (availabilityChanged) {
+                BookAvailabilityDTO availabilityUpdate = createAvailabilityDTO(updatedBook);
+                logger.info("Emitting book availability update: Book ID: {}, Title: '{}', Available: {}", 
+                        availabilityUpdate.getId(), availabilityUpdate.getTitle(), availabilityUpdate.isAvailable());
+                bookAvailabilitySink.tryEmitNext(availabilityUpdate);
+            }
 
             return mapToDTO(updatedBook);
         } catch (EntityNotFoundException | IllegalArgumentException e) {
@@ -218,6 +238,14 @@ public class BookServiceImpl implements BookService {
                 .collect(Collectors.toList());
     }
 
+    @Override
+    public Flux<BookAvailabilityDTO> streamBookAvailabilityUpdates() {
+        logger.info("Client subscribed to book availability updates stream");
+        return bookAvailabilitySink.asFlux()
+                .publishOn(Schedulers.boundedElastic())
+                .doOnCancel(() -> logger.info("Client unsubscribed from book availability updates stream"));
+    }
+
     /**
      * Map Book entity to BookResponseDTO
      */
@@ -245,5 +273,18 @@ public class BookServiceImpl implements BookService {
         book.setGenre(dto.getGenre());
         book.setAvailable(dto.isAvailable());
         return book;
+    }
+
+    /**
+     * Create a BookAvailabilityDTO from a Book entity
+     */
+    private BookAvailabilityDTO createAvailabilityDTO(Book book) {
+        return new BookAvailabilityDTO(
+                book.getId(),
+                book.getTitle(),
+                book.getIsbn(),
+                book.isAvailable(),
+                LocalDateTime.now().format(DATE_TIME_FORMATTER)
+        );
     }
 }

@@ -1,5 +1,6 @@
 package com.okturan.getirbootcamplibrarymanagementsystem.service.impl;
 
+import com.okturan.getirbootcamplibrarymanagementsystem.dto.BookRequestDTO;
 import com.okturan.getirbootcamplibrarymanagementsystem.dto.BorrowingHistoryDTO;
 import com.okturan.getirbootcamplibrarymanagementsystem.dto.BorrowingRequestDTO;
 import com.okturan.getirbootcamplibrarymanagementsystem.dto.BorrowingResponseDTO;
@@ -10,6 +11,7 @@ import com.okturan.getirbootcamplibrarymanagementsystem.model.User;
 import com.okturan.getirbootcamplibrarymanagementsystem.repository.BookRepository;
 import com.okturan.getirbootcamplibrarymanagementsystem.repository.BorrowingRepository;
 import com.okturan.getirbootcamplibrarymanagementsystem.repository.UserRepository;
+import com.okturan.getirbootcamplibrarymanagementsystem.service.BookService;
 import com.okturan.getirbootcamplibrarymanagementsystem.service.BorrowingService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -36,6 +38,7 @@ public class BorrowingServiceImpl implements BorrowingService {
     private final BorrowingRepository borrowingRepository;
     private final BookRepository bookRepository;
     private final UserRepository userRepository;
+    private final BookService bookService;
 
     @Override
     @Transactional
@@ -97,7 +100,19 @@ public class BorrowingServiceImpl implements BorrowingService {
 
         // Update book availability
         book.setAvailable(false);
-        bookRepository.save(book);
+        Book savedBook = bookRepository.save(book);
+
+        // Emit book availability update
+        logger.info("Emitting availability update for book ID: {}, Title: '{}', Available: false", 
+                savedBook.getId(), savedBook.getTitle());
+        bookService.updateBook(savedBook.getId(), 
+                new BookRequestDTO(
+                        savedBook.getTitle(), 
+                        savedBook.getAuthor(), 
+                        savedBook.getIsbn(), 
+                        savedBook.getPublicationDate(), 
+                        savedBook.getGenre(), 
+                        false));
 
         return mapToDTO(borrowing);
     }
@@ -127,7 +142,19 @@ public class BorrowingServiceImpl implements BorrowingService {
         // Update book availability
         Book book = borrowing.getBook();
         book.setAvailable(true);
-        bookRepository.save(book);
+        Book savedBook = bookRepository.save(book);
+
+        // Emit book availability update
+        logger.info("Emitting availability update for book ID: {}, Title: '{}', Available: true", 
+                savedBook.getId(), savedBook.getTitle());
+        bookService.updateBook(savedBook.getId(), 
+                new BookRequestDTO(
+                        savedBook.getTitle(), 
+                        savedBook.getAuthor(), 
+                        savedBook.getIsbn(), 
+                        savedBook.getPublicationDate(), 
+                        savedBook.getGenre(), 
+                        true));
 
         return mapToDTO(borrowing);
     }

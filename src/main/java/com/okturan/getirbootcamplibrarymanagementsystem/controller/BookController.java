@@ -1,5 +1,6 @@
 package com.okturan.getirbootcamplibrarymanagementsystem.controller;
 
+import com.okturan.getirbootcamplibrarymanagementsystem.dto.BookAvailabilityDTO;
 import com.okturan.getirbootcamplibrarymanagementsystem.dto.BookRequestDTO;
 import com.okturan.getirbootcamplibrarymanagementsystem.dto.BookResponseDTO;
 import com.okturan.getirbootcamplibrarymanagementsystem.service.BookService;
@@ -16,9 +17,12 @@ import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Flux;
 
 import java.util.List;
 
@@ -239,6 +243,23 @@ public class BookController {
             logger.error("Failed to search books by availability: {}", available, e);
             throw e;
         }
+    }
+
+    @GetMapping(path = "/availability/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    @Operation(summary = "Stream real-time book availability updates", 
+               description = "Returns a stream of Server-Sent Events with real-time book availability updates")
+    @ApiResponse(responseCode = "200", description = "Stream of book availability updates",
+                 content = @Content(mediaType = MediaType.TEXT_EVENT_STREAM_VALUE, 
+                 schema = @Schema(implementation = BookAvailabilityDTO.class)))
+    public Flux<ServerSentEvent<BookAvailabilityDTO>> streamBookAvailability() {
+        logger.info("Client connected to book availability stream");
+        return bookService.streamBookAvailabilityUpdates()
+                .map(availabilityDTO -> ServerSentEvent.<BookAvailabilityDTO>builder()
+                        .id(String.valueOf(availabilityDTO.getId()))
+                        .event("book-availability-update")
+                        .data(availabilityDTO)
+                        .build())
+                .doOnCancel(() -> logger.info("Client disconnected from book availability stream"));
     }
 
     // Admin-only endpoints
