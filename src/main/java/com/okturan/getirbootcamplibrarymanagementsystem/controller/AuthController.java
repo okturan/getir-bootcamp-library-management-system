@@ -4,6 +4,7 @@ import com.okturan.getirbootcamplibrarymanagementsystem.dto.JwtResponseDTO;
 import com.okturan.getirbootcamplibrarymanagementsystem.dto.LoginDTO;
 import com.okturan.getirbootcamplibrarymanagementsystem.dto.UserRegistrationDTO;
 import com.okturan.getirbootcamplibrarymanagementsystem.exception.GlobalExceptionHandler.ErrorResponse;
+import com.okturan.getirbootcamplibrarymanagementsystem.mapper.UserMapper;
 import com.okturan.getirbootcamplibrarymanagementsystem.model.Role;
 import com.okturan.getirbootcamplibrarymanagementsystem.model.User;
 import com.okturan.getirbootcamplibrarymanagementsystem.security.JwtTokenProvider;
@@ -41,6 +42,7 @@ public class AuthController {
     private final JwtTokenProvider tokenProvider;
     private final AuthenticationManager authenticationManager;
     private final UserService userService;
+    private final UserMapper userMapper;
 
     @PostMapping("/register")
     @Operation(summary = "Register a new user", description = "Creates a new user account")
@@ -106,20 +108,9 @@ public class AuthController {
         }
 
         logger.debug("Creating new user with username: {}", registrationDTO.getUsername());
-        // Create new user
-        User user = new User(
-                registrationDTO.getUsername(),
-                registrationDTO.getPassword(),
-                registrationDTO.getEmail()
-        );
-
-        // Set role if specified, otherwise default to PATRON (handled in User constructor)
-        if (registrationDTO.getRole() != null) {
-            // Clear default role and set the specified one
-            user.getRoles().clear();
-            user.addRole(registrationDTO.getRole());
-            logger.debug("Setting user role to: {}", registrationDTO.getRole());
-        }
+        // Create new user using mapper
+        User user = userMapper.mapToEntity(registrationDTO);
+        logger.debug("User entity created with username: {}", user.getUsername());
 
         // Save user
         User savedUser = userService.registerUser(user);

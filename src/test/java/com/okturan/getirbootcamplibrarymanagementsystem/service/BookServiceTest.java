@@ -1,7 +1,9 @@
 package com.okturan.getirbootcamplibrarymanagementsystem.service;
 
+import com.okturan.getirbootcamplibrarymanagementsystem.dto.BookAvailabilityDTO;
 import com.okturan.getirbootcamplibrarymanagementsystem.dto.BookRequestDTO;
 import com.okturan.getirbootcamplibrarymanagementsystem.dto.BookResponseDTO;
+import com.okturan.getirbootcamplibrarymanagementsystem.mapper.BookMapper;
 import com.okturan.getirbootcamplibrarymanagementsystem.model.Book;
 import com.okturan.getirbootcamplibrarymanagementsystem.repository.BookRepository;
 import com.okturan.getirbootcamplibrarymanagementsystem.service.impl.BookServiceImpl;
@@ -14,6 +16,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -21,12 +25,16 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.lenient;
 
 @ExtendWith(MockitoExtension.class)
 public class BookServiceTest {
 
     @Mock
     private BookRepository bookRepository;
+
+    @Mock
+    private BookMapper bookMapper;
 
     @InjectMocks
     private BookServiceImpl bookService;
@@ -54,6 +62,31 @@ public class BookServiceTest {
         bookRequestDTO.setPublicationDate(LocalDate.of(2023, 1, 1));
         bookRequestDTO.setGenre("Test Genre");
         bookRequestDTO.setAvailable(true);
+
+        // Configure BookMapper mock with lenient stubbings
+        lenient().when(bookMapper.mapToEntity(any(BookRequestDTO.class))).thenReturn(testBook);
+        lenient().when(bookMapper.mapToDTO(any(Book.class))).thenAnswer(invocation -> {
+            Book book = invocation.getArgument(0);
+            return new BookResponseDTO(
+                book.getId(),
+                book.getTitle(),
+                book.getAuthor(),
+                book.getIsbn(),
+                book.getPublicationDate(),
+                book.getGenre(),
+                book.isAvailable()
+            );
+        });
+        lenient().when(bookMapper.createAvailabilityDTO(any(Book.class))).thenAnswer(invocation -> {
+            Book book = invocation.getArgument(0);
+            return new BookAvailabilityDTO(
+                book.getId(),
+                book.getTitle(),
+                book.getIsbn(),
+                book.isAvailable(),
+                LocalDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME)
+            );
+        });
     }
 
     @Test

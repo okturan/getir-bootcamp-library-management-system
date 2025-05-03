@@ -3,6 +3,7 @@ package com.okturan.getirbootcamplibrarymanagementsystem.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.okturan.getirbootcamplibrarymanagementsystem.dto.LoginDTO;
 import com.okturan.getirbootcamplibrarymanagementsystem.dto.UserRegistrationDTO;
+import com.okturan.getirbootcamplibrarymanagementsystem.mapper.UserMapper;
 import com.okturan.getirbootcamplibrarymanagementsystem.model.Role;
 import com.okturan.getirbootcamplibrarymanagementsystem.model.User;
 import com.okturan.getirbootcamplibrarymanagementsystem.security.JwtTokenProvider;
@@ -45,6 +46,9 @@ public class AuthControllerTest {
 
     @Mock
     private AuthenticationManager authenticationManager;
+
+    @Mock
+    private UserMapper userMapper;
 
     @InjectMocks
     private AuthController authController;
@@ -91,6 +95,7 @@ public class AuthControllerTest {
         // Arrange
         when(userService.existsByUsername(anyString())).thenReturn(false);
         when(userService.existsByEmail(anyString())).thenReturn(false);
+        when(userMapper.mapToEntity(any(UserRegistrationDTO.class))).thenReturn(user);
         when(userService.registerUser(any(User.class))).thenReturn(user);
         when(authenticationManager.authenticate(any(Authentication.class))).thenReturn(authentication);
         when(tokenProvider.createToken(any(Authentication.class))).thenReturn("jwt-token");

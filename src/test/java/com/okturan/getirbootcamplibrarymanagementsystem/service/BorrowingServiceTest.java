@@ -1,8 +1,10 @@
 package com.okturan.getirbootcamplibrarymanagementsystem.service;
 
+import com.okturan.getirbootcamplibrarymanagementsystem.dto.BookResponseDTO;
 import com.okturan.getirbootcamplibrarymanagementsystem.dto.BorrowingHistoryDTO;
 import com.okturan.getirbootcamplibrarymanagementsystem.dto.BorrowingRequestDTO;
 import com.okturan.getirbootcamplibrarymanagementsystem.dto.BorrowingResponseDTO;
+import com.okturan.getirbootcamplibrarymanagementsystem.mapper.BorrowingMapper;
 import com.okturan.getirbootcamplibrarymanagementsystem.model.Book;
 import com.okturan.getirbootcamplibrarymanagementsystem.model.Borrowing;
 import com.okturan.getirbootcamplibrarymanagementsystem.model.Role;
@@ -30,7 +32,9 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.lenient;
 
 @ExtendWith(MockitoExtension.class)
 public class BorrowingServiceTest {
@@ -43,6 +47,12 @@ public class BorrowingServiceTest {
 
     @Mock
     private UserRepository userRepository;
+
+    @Mock
+    private BookService bookService;
+
+    @Mock
+    private BorrowingMapper borrowingMapper;
 
     @Mock
     private SecurityContext securityContext;
@@ -102,6 +112,50 @@ public class BorrowingServiceTest {
         borrowingRequestDTO = new BorrowingRequestDTO();
         borrowingRequestDTO.setBookId(1L);
         borrowingRequestDTO.setDueDate(LocalDate.now().plusDays(14));
+
+        // Configure BorrowingMapper mock
+        lenient().when(borrowingMapper.mapToDTO(any(Borrowing.class))).thenAnswer(invocation -> {
+            Borrowing b = invocation.getArgument(0);
+            BorrowingResponseDTO dto = new BorrowingResponseDTO();
+            dto.setId(b.getId());
+            if (b.getBook() != null) {
+                dto.setBookId(b.getBook().getId());
+                dto.setBookTitle(b.getBook().getTitle());
+                dto.setBookIsbn(b.getBook().getIsbn());
+            }
+            if (b.getUser() != null) {
+                dto.setUserId(b.getUser().getId());
+                dto.setUsername(b.getUser().getUsername());
+            }
+            dto.setBorrowDate(b.getBorrowDate());
+            dto.setDueDate(b.getDueDate());
+            dto.setReturnDate(b.getReturnDate());
+            dto.setReturned(b.isReturned());
+            dto.setOverdue(b.isOverdue());
+            return dto;
+        });
+
+        // Configure BookService mock
+        lenient().when(bookService.updateBook(anyLong(), any())).thenAnswer(invocation -> {
+            Long bookId = invocation.getArgument(0);
+            Book updatedBook = new Book();
+            updatedBook.setId(bookId);
+            updatedBook.setTitle("Test Book");
+            updatedBook.setAuthor("Test Author");
+            updatedBook.setIsbn("978-3-16-148410-0");
+            updatedBook.setGenre("Test Genre");
+            updatedBook.setPublicationDate(LocalDate.of(2020, 1, 1));
+            updatedBook.setAvailable(true);
+            return new BookResponseDTO(
+                updatedBook.getId(),
+                updatedBook.getTitle(),
+                updatedBook.getAuthor(),
+                updatedBook.getIsbn(),
+                updatedBook.getPublicationDate(),
+                updatedBook.getGenre(),
+                updatedBook.isAvailable()
+            );
+        });
     }
 
     @Test
@@ -111,6 +165,7 @@ public class BorrowingServiceTest {
         when(userRepository.findByUsername("patron")).thenReturn(Optional.of(patron));
         when(bookRepository.findById(1L)).thenReturn(Optional.of(book));
         when(borrowingRepository.save(any(Borrowing.class))).thenReturn(borrowing);
+        when(bookRepository.save(any(Book.class))).thenReturn(book);
 
         // Act
         BorrowingResponseDTO result = borrowingService.borrowBook(borrowingRequestDTO);
@@ -178,6 +233,7 @@ public class BorrowingServiceTest {
         when(userRepository.findById(1L)).thenReturn(Optional.of(patron));
         when(bookRepository.findById(1L)).thenReturn(Optional.of(book));
         when(borrowingRepository.save(any(Borrowing.class))).thenReturn(borrowing);
+        when(bookRepository.save(any(Book.class))).thenReturn(book);
 
         // Set userId in the request
         borrowingRequestDTO.setUserId(1L);
@@ -205,6 +261,7 @@ public class BorrowingServiceTest {
         when(userRepository.findById(1L)).thenReturn(Optional.of(patron));
         when(bookRepository.findById(1L)).thenReturn(Optional.of(book));
         when(borrowingRepository.save(any(Borrowing.class))).thenReturn(borrowing);
+        when(bookRepository.save(any(Book.class))).thenReturn(book);
 
         // Set userId in the request
         borrowingRequestDTO.setUserId(1L);
@@ -261,6 +318,7 @@ public class BorrowingServiceTest {
         when(userRepository.findByUsername("patron")).thenReturn(Optional.of(patron));
         when(borrowingRepository.findById(1L)).thenReturn(Optional.of(borrowing));
         when(borrowingRepository.save(any(Borrowing.class))).thenReturn(borrowing);
+        when(bookRepository.save(any(Book.class))).thenReturn(book);
 
         // Act
         BorrowingResponseDTO result = borrowingService.returnBook(1L);
@@ -307,10 +365,21 @@ public class BorrowingServiceTest {
     void getCurrentUserBorrowingHistory_Success() {
         // Arrange
         List<Borrowing> borrowings = Arrays.asList(borrowing);
+        BorrowingResponseDTO dto = new BorrowingResponseDTO();
+        dto.setId(1L);
+        dto.setBookId(1L);
+        dto.setBookTitle("Test Book");
+        dto.setBookIsbn("978-3-16-148410-0");
+        dto.setUserId(1L);
+        dto.setUsername("patron");
+        dto.setBorrowDate(LocalDate.now());
+        dto.setDueDate(LocalDate.now().plusDays(14));
+        dto.setReturned(false);
 
         when(authentication.getName()).thenReturn("patron");
         when(userRepository.findByUsername("patron")).thenReturn(Optional.of(patron));
         when(borrowingRepository.findByUser(patron)).thenReturn(borrowings);
+        when(borrowingMapper.mapToDTO(any(Borrowing.class))).thenReturn(dto);
 
         // Act
         BorrowingHistoryDTO result = borrowingService.getCurrentUserBorrowingHistory();
@@ -329,11 +398,22 @@ public class BorrowingServiceTest {
     void getUserBorrowingHistory_Success() {
         // Arrange
         List<Borrowing> borrowings = Arrays.asList(borrowing);
+        BorrowingResponseDTO dto = new BorrowingResponseDTO();
+        dto.setId(1L);
+        dto.setBookId(1L);
+        dto.setBookTitle("Test Book");
+        dto.setBookIsbn("978-3-16-148410-0");
+        dto.setUserId(1L);
+        dto.setUsername("patron");
+        dto.setBorrowDate(LocalDate.now());
+        dto.setDueDate(LocalDate.now().plusDays(14));
+        dto.setReturned(false);
 
         when(authentication.getName()).thenReturn("librarian");
         when(userRepository.findByUsername("librarian")).thenReturn(Optional.of(librarian));
         when(userRepository.findById(1L)).thenReturn(Optional.of(patron));
         when(borrowingRepository.findByUser(patron)).thenReturn(borrowings);
+        when(borrowingMapper.mapToDTO(any(Borrowing.class))).thenReturn(dto);
 
         // Act
         BorrowingHistoryDTO result = borrowingService.getUserBorrowingHistory(1L);
@@ -355,10 +435,21 @@ public class BorrowingServiceTest {
     void getAllActiveBorrowings_Success() {
         // Arrange
         List<Borrowing> borrowings = Arrays.asList(borrowing);
+        BorrowingResponseDTO dto = new BorrowingResponseDTO();
+        dto.setId(1L);
+        dto.setBookId(1L);
+        dto.setBookTitle("Test Book");
+        dto.setBookIsbn("978-3-16-148410-0");
+        dto.setUserId(1L);
+        dto.setUsername("patron");
+        dto.setBorrowDate(LocalDate.now());
+        dto.setDueDate(LocalDate.now().plusDays(14));
+        dto.setReturned(false);
 
         when(authentication.getName()).thenReturn("librarian");
         when(userRepository.findByUsername("librarian")).thenReturn(Optional.of(librarian));
         when(borrowingRepository.findByReturned(false)).thenReturn(borrowings);
+        when(borrowingMapper.mapToDTO(any(Borrowing.class))).thenReturn(dto);
 
         // Act
         List<BorrowingResponseDTO> result = borrowingService.getAllActiveBorrowings();
@@ -381,10 +472,22 @@ public class BorrowingServiceTest {
         // Arrange
         borrowing.setDueDate(LocalDate.now().minusDays(1));
         List<Borrowing> borrowings = Arrays.asList(borrowing);
+        BorrowingResponseDTO dto = new BorrowingResponseDTO();
+        dto.setId(1L);
+        dto.setBookId(1L);
+        dto.setBookTitle("Test Book");
+        dto.setBookIsbn("978-3-16-148410-0");
+        dto.setUserId(1L);
+        dto.setUsername("patron");
+        dto.setBorrowDate(LocalDate.now());
+        dto.setDueDate(LocalDate.now().minusDays(1));
+        dto.setReturned(false);
+        dto.setOverdue(true);
 
         when(authentication.getName()).thenReturn("librarian");
         when(userRepository.findByUsername("librarian")).thenReturn(Optional.of(librarian));
         when(borrowingRepository.findByDueDateBeforeAndReturned(any(LocalDate.class), eq(false))).thenReturn(borrowings);
+        when(borrowingMapper.mapToDTO(any(Borrowing.class))).thenReturn(dto);
 
         // Act
         List<BorrowingResponseDTO> result = borrowingService.getAllOverdueBorrowings();

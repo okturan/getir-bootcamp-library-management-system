@@ -3,6 +3,7 @@ package com.okturan.getirbootcamplibrarymanagementsystem.service.impl;
 import com.okturan.getirbootcamplibrarymanagementsystem.dto.BookAvailabilityDTO;
 import com.okturan.getirbootcamplibrarymanagementsystem.dto.BookRequestDTO;
 import com.okturan.getirbootcamplibrarymanagementsystem.dto.BookResponseDTO;
+import com.okturan.getirbootcamplibrarymanagementsystem.mapper.BookMapper;
 import com.okturan.getirbootcamplibrarymanagementsystem.model.Book;
 import com.okturan.getirbootcamplibrarymanagementsystem.repository.BookRepository;
 import com.okturan.getirbootcamplibrarymanagementsystem.service.BookService;
@@ -29,9 +30,11 @@ public class BookServiceImpl implements BookService {
 
     private final BookRepository bookRepository;
     private final Sinks.Many<BookAvailabilityDTO> bookAvailabilitySink;
+    private final BookMapper bookMapper;
 
-    public BookServiceImpl(BookRepository bookRepository) {
+    public BookServiceImpl(BookRepository bookRepository, BookMapper bookMapper) {
         this.bookRepository = bookRepository;
+        this.bookMapper = bookMapper;
         this.bookAvailabilitySink = Sinks.many().multicast().onBackpressureBuffer();
     }
 
@@ -47,14 +50,14 @@ public class BookServiceImpl implements BookService {
         }
 
         try {
-            Book book = mapToEntity(bookRequestDTO);
+            Book book = bookMapper.mapToEntity(bookRequestDTO);
             logger.debug("Mapped DTO to entity for book: '{}'", bookRequestDTO.getTitle());
 
             Book savedBook = bookRepository.save(book);
             logger.info("Book created successfully: ID: {}, title: '{}', ISBN: {}", 
                     savedBook.getId(), savedBook.getTitle(), savedBook.getIsbn());
 
-            return mapToDTO(savedBook);
+            return bookMapper.mapToDTO(savedBook);
         } catch (Exception e) {
             logger.error("Error creating book with title: '{}', ISBN: {}", 
                     bookRequestDTO.getTitle(), bookRequestDTO.getIsbn(), e);
@@ -75,7 +78,7 @@ public class BookServiceImpl implements BookService {
 
             logger.debug("Book found: ID: {}, title: '{}', ISBN: {}", 
                     book.getId(), book.getTitle(), book.getIsbn());
-            return mapToDTO(book);
+            return bookMapper.mapToDTO(book);
         } catch (EntityNotFoundException e) {
             // Already logged in the orElseThrow
             throw e;
@@ -98,7 +101,7 @@ public class BookServiceImpl implements BookService {
 
             logger.debug("Book found: ID: {}, title: '{}', ISBN: {}", 
                     book.getId(), book.getTitle(), book.getIsbn());
-            return mapToDTO(book);
+            return bookMapper.mapToDTO(book);
         } catch (EntityNotFoundException e) {
             // Already logged in the orElseThrow
             throw e;
@@ -114,7 +117,7 @@ public class BookServiceImpl implements BookService {
         logger.debug("Retrieving all books");
         try {
             List<BookResponseDTO> books = bookRepository.findAll().stream()
-                    .map(this::mapToDTO)
+                    .map(bookMapper::mapToDTO)
                     .collect(Collectors.toList());
 
             logger.debug("Retrieved {} books", books.size());
@@ -168,13 +171,13 @@ public class BookServiceImpl implements BookService {
 
             // If availability changed, emit an update to the sink
             if (availabilityChanged) {
-                BookAvailabilityDTO availabilityUpdate = createAvailabilityDTO(updatedBook);
+                BookAvailabilityDTO availabilityUpdate = bookMapper.createAvailabilityDTO(updatedBook);
                 logger.info("Emitting book availability update: Book ID: {}, Title: '{}', Available: {}", 
                         availabilityUpdate.getId(), availabilityUpdate.getTitle(), availabilityUpdate.isAvailable());
                 bookAvailabilitySink.tryEmitNext(availabilityUpdate);
             }
 
-            return mapToDTO(updatedBook);
+            return bookMapper.mapToDTO(updatedBook);
         } catch (EntityNotFoundException | IllegalArgumentException e) {
             // Already logged above
             throw e;
@@ -210,7 +213,7 @@ public class BookServiceImpl implements BookService {
     @Transactional(readOnly = true)
     public List<BookResponseDTO> findBooksByAuthor(String author) {
         return bookRepository.findByAuthorContainingIgnoreCase(author).stream()
-                .map(this::mapToDTO)
+                .map(bookMapper::mapToDTO)
                 .collect(Collectors.toList());
     }
 
@@ -218,7 +221,7 @@ public class BookServiceImpl implements BookService {
     @Transactional(readOnly = true)
     public List<BookResponseDTO> findBooksByTitle(String title) {
         return bookRepository.findByTitleContainingIgnoreCase(title).stream()
-                .map(this::mapToDTO)
+                .map(bookMapper::mapToDTO)
                 .collect(Collectors.toList());
     }
 
@@ -226,7 +229,7 @@ public class BookServiceImpl implements BookService {
     @Transactional(readOnly = true)
     public List<BookResponseDTO> findBooksByGenre(String genre) {
         return bookRepository.findByGenreContainingIgnoreCase(genre).stream()
-                .map(this::mapToDTO)
+                .map(bookMapper::mapToDTO)
                 .collect(Collectors.toList());
     }
 
@@ -234,7 +237,7 @@ public class BookServiceImpl implements BookService {
     @Transactional(readOnly = true)
     public List<BookResponseDTO> findBooksByAvailability(boolean available) {
         return bookRepository.findByAvailable(available).stream()
-                .map(this::mapToDTO)
+                .map(bookMapper::mapToDTO)
                 .collect(Collectors.toList());
     }
 
@@ -246,45 +249,4 @@ public class BookServiceImpl implements BookService {
                 .doOnCancel(() -> logger.info("Client unsubscribed from book availability updates stream"));
     }
 
-    /**
-     * Map Book entity to BookResponseDTO
-     */
-    private BookResponseDTO mapToDTO(Book book) {
-        return new BookResponseDTO(
-                book.getId(),
-                book.getTitle(),
-                book.getAuthor(),
-                book.getIsbn(),
-                book.getPublicationDate(),
-                book.getGenre(),
-                book.isAvailable()
-        );
-    }
-
-    /**
-     * Map BookRequestDTO to Book entity
-     */
-    private Book mapToEntity(BookRequestDTO dto) {
-        Book book = new Book();
-        book.setTitle(dto.getTitle());
-        book.setAuthor(dto.getAuthor());
-        book.setIsbn(dto.getIsbn());
-        book.setPublicationDate(dto.getPublicationDate());
-        book.setGenre(dto.getGenre());
-        book.setAvailable(dto.isAvailable());
-        return book;
-    }
-
-    /**
-     * Create a BookAvailabilityDTO from a Book entity
-     */
-    private BookAvailabilityDTO createAvailabilityDTO(Book book) {
-        return new BookAvailabilityDTO(
-                book.getId(),
-                book.getTitle(),
-                book.getIsbn(),
-                book.isAvailable(),
-                LocalDateTime.now().format(DATE_TIME_FORMATTER)
-        );
-    }
 }

@@ -4,6 +4,7 @@ import com.okturan.getirbootcamplibrarymanagementsystem.dto.BookRequestDTO;
 import com.okturan.getirbootcamplibrarymanagementsystem.dto.BorrowingHistoryDTO;
 import com.okturan.getirbootcamplibrarymanagementsystem.dto.BorrowingRequestDTO;
 import com.okturan.getirbootcamplibrarymanagementsystem.dto.BorrowingResponseDTO;
+import com.okturan.getirbootcamplibrarymanagementsystem.mapper.BorrowingMapper;
 import com.okturan.getirbootcamplibrarymanagementsystem.model.Book;
 import com.okturan.getirbootcamplibrarymanagementsystem.model.Borrowing;
 import com.okturan.getirbootcamplibrarymanagementsystem.model.Role;
@@ -39,6 +40,7 @@ public class BorrowingServiceImpl implements BorrowingService {
     private final BookRepository bookRepository;
     private final UserRepository userRepository;
     private final BookService bookService;
+    private final BorrowingMapper borrowingMapper;
 
     @Override
     @Transactional
@@ -114,7 +116,7 @@ public class BorrowingServiceImpl implements BorrowingService {
                         savedBook.getGenre(), 
                         false));
 
-        return mapToDTO(borrowing);
+        return borrowingMapper.mapToDTO(borrowing);
     }
 
     @Override
@@ -156,7 +158,7 @@ public class BorrowingServiceImpl implements BorrowingService {
                         savedBook.getGenre(), 
                         true));
 
-        return mapToDTO(borrowing);
+        return borrowingMapper.mapToDTO(borrowing);
     }
 
     @Override
@@ -170,7 +172,7 @@ public class BorrowingServiceImpl implements BorrowingService {
         Borrowing borrowing = borrowingRepository.findById(borrowingId)
                 .orElseThrow(() -> new EntityNotFoundException("Borrowing not found with ID: " + borrowingId));
 
-        return mapToDTO(borrowing);
+        return borrowingMapper.mapToDTO(borrowing);
     }
 
     @Override
@@ -208,7 +210,7 @@ public class BorrowingServiceImpl implements BorrowingService {
         List<Borrowing> borrowings = borrowingRepository.findByReturned(false);
 
         return borrowings.stream()
-                .map(this::mapToDTO)
+                .map(borrowingMapper::mapToDTO)
                 .collect(Collectors.toList());
     }
 
@@ -223,7 +225,7 @@ public class BorrowingServiceImpl implements BorrowingService {
         List<Borrowing> borrowings = borrowingRepository.findByDueDateBeforeAndReturned(LocalDate.now(), false);
 
         return borrowings.stream()
-                .map(this::mapToDTO)
+                .map(borrowingMapper::mapToDTO)
                 .collect(Collectors.toList());
     }
 
@@ -253,7 +255,7 @@ public class BorrowingServiceImpl implements BorrowingService {
 
         // Map borrowings to DTOs
         List<BorrowingResponseDTO> borrowingDTOs = borrowings.stream()
-                .map(this::mapToDTO)
+                .map(borrowingMapper::mapToDTO)
                 .collect(Collectors.toList());
 
         // Count current and overdue borrowings
@@ -277,19 +279,4 @@ public class BorrowingServiceImpl implements BorrowingService {
         return historyDTO;
     }
 
-    private BorrowingResponseDTO mapToDTO(Borrowing borrowing) {
-        BorrowingResponseDTO dto = new BorrowingResponseDTO();
-        dto.setId(borrowing.getId());
-        dto.setBookId(borrowing.getBook().getId());
-        dto.setBookTitle(borrowing.getBook().getTitle());
-        dto.setBookIsbn(borrowing.getBook().getIsbn());
-        dto.setUserId(borrowing.getUser().getId());
-        dto.setUsername(borrowing.getUser().getUsername());
-        dto.setBorrowDate(borrowing.getBorrowDate());
-        dto.setDueDate(borrowing.getDueDate());
-        dto.setReturnDate(borrowing.getReturnDate());
-        dto.setReturned(borrowing.isReturned());
-        dto.setOverdue(borrowing.isOverdue());
-        return dto;
-    }
 }
