@@ -1,12 +1,14 @@
 package com.okturan.getirbootcamplibrarymanagementsystem.dto;
 
+import com.okturan.getirbootcamplibrarymanagementsystem.model.Role;
+
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
-@Schema(description = "User registration request")
-public record UserRegistrationDTO(
+@Schema(description = "Admin user registration request")
+public record AdminUserRegistrationDTO(
     @NotBlank(message = "Username is required")
     @Size(min = 3, max = 50, message = "Username must be between 3 and 50 characters")
     @Schema(description = "Username", example = "johndoe")
@@ -20,5 +22,13 @@ public record UserRegistrationDTO(
     @NotBlank(message = "Email is required")
     @Email(message = "Email should be valid")
     @Schema(description = "Email", example = "john.doe@example.com")
-    String email
-) {}
+    String email,
+
+    @Schema(description = "User role (ADMIN, LIBRARIAN, PATRON). Defaults to PATRON if not specified.", example = "PATRON")
+    Role role
+) {
+    // Factory method to create AdminUserRegistrationDTO from UserRegistrationDTO
+    public static AdminUserRegistrationDTO from(UserRegistrationDTO dto, Role role) {
+        return new AdminUserRegistrationDTO(dto.username(), dto.password(), dto.email(), role);
+    }
+}

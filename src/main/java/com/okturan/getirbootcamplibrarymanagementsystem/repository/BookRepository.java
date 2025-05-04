@@ -1,6 +1,7 @@
 package com.okturan.getirbootcamplibrarymanagementsystem.repository;
 
 import com.okturan.getirbootcamplibrarymanagementsystem.model.Book;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -19,4 +20,6 @@ public interface BookRepository extends JpaRepository<Book, Long> {
     List<Book> findByGenreContainingIgnoreCase(String genre);
 
     List<Book> findByAvailable(boolean available);
+
+    boolean existsByIsbn(String isbn);
 }

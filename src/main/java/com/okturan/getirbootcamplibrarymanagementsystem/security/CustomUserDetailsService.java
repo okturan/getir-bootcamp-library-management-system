@@ -1,8 +1,8 @@
 package com.okturan.getirbootcamplibrarymanagementsystem.security;
 
-import com.okturan.getirbootcamplibrarymanagementsystem.model.Role;
 import com.okturan.getirbootcamplibrarymanagementsystem.model.User;
 import com.okturan.getirbootcamplibrarymanagementsystem.repository.UserRepository;
+
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -37,10 +37,11 @@ public class CustomUserDetailsService implements UserDetailsService {
                 .collect(Collectors.toList());
 
         // Create and return a UserDetails object
+        // Note: isActive field has been removed from User model, so we're setting enabled to true by default
         return new org.springframework.security.core.userdetails.User(
                 user.getUsername(),
                 user.getPassword(),
-                user.isActive(),  // enabled
+                true,             // enabled (previously might have used user.isActive())
                 true,             // accountNonExpired
                 true,             // credentialsNonExpired
                 true,             // accountNonLocked

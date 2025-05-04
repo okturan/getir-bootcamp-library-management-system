@@ -1,5 +1,7 @@
 package com.okturan.getirbootcamplibrarymanagementsystem.model;
 
+import org.hibernate.validator.constraints.ISBN;
+
 import java.time.LocalDate;
 import java.util.Objects;
 
@@ -12,8 +14,6 @@ import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import org.hibernate.validator.constraints.ISBN;
-
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;

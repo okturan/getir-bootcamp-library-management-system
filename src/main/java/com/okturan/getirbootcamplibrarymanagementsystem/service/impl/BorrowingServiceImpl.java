@@ -1,6 +1,5 @@
 package com.okturan.getirbootcamplibrarymanagementsystem.service.impl;
 
-import com.okturan.getirbootcamplibrarymanagementsystem.dto.BookRequestDTO;
 import com.okturan.getirbootcamplibrarymanagementsystem.dto.BorrowingHistoryDTO;
 import com.okturan.getirbootcamplibrarymanagementsystem.dto.BorrowingRequestDTO;
 import com.okturan.getirbootcamplibrarymanagementsystem.dto.BorrowingResponseDTO;
@@ -14,12 +13,7 @@ import com.okturan.getirbootcamplibrarymanagementsystem.repository.BorrowingRepo
 import com.okturan.getirbootcamplibrarymanagementsystem.repository.UserRepository;
 import com.okturan.getirbootcamplibrarymanagementsystem.service.BookService;
 import com.okturan.getirbootcamplibrarymanagementsystem.service.BorrowingService;
-import jakarta.persistence.EntityNotFoundException;
-import lombok.RequiredArgsConstructor;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -28,255 +22,170 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.stream.Collectors;
 
+import jakarta.persistence.EntityNotFoundException;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 @Service("borrowingService")
 @RequiredArgsConstructor
 public class BorrowingServiceImpl implements BorrowingService {
 
-    private static final Logger logger = LoggerFactory.getLogger(BorrowingServiceImpl.class);
+    private final BorrowingRepository borrowingRepo;
+    private final BookRepository bookRepo;
+    private final UserRepository userRepo;
+    private final BookService bookService;          // used only to broadcast availability
+    private final BorrowingMapper mapper;
 
-    private final BorrowingRepository borrowingRepository;
-    private final BookRepository bookRepository;
-    private final UserRepository userRepository;
-    private final BookService bookService;
-    private final BorrowingMapper borrowingMapper;
+    /* ─────────── borrow / return ─────────── */
 
     @Override
     @Transactional
-    public BorrowingResponseDTO borrowBook(BorrowingRequestDTO borrowingRequestDTO) {
-        logger.info("Borrowing book with ID: {}", borrowingRequestDTO.getBookId());
+    public BorrowingResponseDTO borrowBook(BorrowingRequestDTO req) {
+        log.info("Borrow request – book {}", req.bookId());
 
-        // Get the current user
-        User currentUser = getCurrentUser();
+        User borrower = resolveBorrower(req.userId());
+        Book book = bookRepo.findById(req.bookId())
+                            .orElseThrow(() -> new EntityNotFoundException("Book not found " + req.bookId()));
 
-        // Determine which user will be the borrower
-        User borrower;
+        if (!book.isAvailable()) throw new IllegalStateException("Book is not available");
 
-        if (borrowingRequestDTO.getUserId() != null) {
-            // If userId is provided, check if current user is admin or librarian
-            if (!currentUser.hasRole(Role.ADMIN) && !currentUser.hasRole(Role.LIBRARIAN)) {
-                throw new AccessDeniedException("Only admins and librarians can borrow books for other users");
-            }
-
-            // Get the user to borrow for
-            borrower = userRepository.findById(borrowingRequestDTO.getUserId())
-                    .orElseThrow(() -> new EntityNotFoundException("User not found with ID: " + borrowingRequestDTO.getUserId()));
-
-            // Check if the target user is a librarian or admin
-            if (borrower.hasRole(Role.LIBRARIAN) || borrower.hasRole(Role.ADMIN)) {
-                throw new IllegalArgumentException("Books can only be borrowed for patrons, not for librarians or admins");
-            }
-
-            logger.info("Admin/Librarian {} is borrowing a book for user {}", currentUser.getUsername(), borrower.getUsername());
-        } else {
-            // If userId is not provided, the current user wants to borrow for themselves
-
-            // Check if current user is admin or librarian
-            if (currentUser.hasRole(Role.ADMIN) || currentUser.hasRole(Role.LIBRARIAN)) {
-                throw new AccessDeniedException("Admins and librarians cannot borrow books for themselves. Please specify a patron userId.");
-            }
-
-            borrower = currentUser;
-        }
-
-        // Get the book
-        Book book = bookRepository.findById(borrowingRequestDTO.getBookId())
-                .orElseThrow(() -> new EntityNotFoundException("Book not found with ID: " + borrowingRequestDTO.getBookId()));
-
-        // Check if the book is available
-        if (!book.isAvailable()) {
-            throw new IllegalStateException("Book is not available for borrowing");
-        }
-
-        // Create a new borrowing
         Borrowing borrowing = new Borrowing();
-        borrowing.setBook(book);
-        borrowing.setUser(borrower);
-        borrowing.setBorrowDate(LocalDate.now());
-        borrowing.setDueDate(borrowingRequestDTO.getDueDate());
-        borrowing.setReturned(false);
+        mapper.initBorrowing(borrowing, book, borrower, req);
 
-        // Save the borrowing
-        borrowing = borrowingRepository.save(borrowing);
+        borrowingRepo.save(borrowing);
 
-        // Update book availability
+        // Flip availability once and emit
         book.setAvailable(false);
-        Book savedBook = bookRepository.save(book);
+        bookRepo.save(book);
+        bookService.emitAvailabilityUpdate(book);
 
-        // Emit book availability update
-        logger.info("Emitting availability update for book ID: {}, Title: '{}', Available: false", 
-                savedBook.getId(), savedBook.getTitle());
-        bookService.updateBook(savedBook.getId(), 
-                new BookRequestDTO(
-                        savedBook.getTitle(), 
-                        savedBook.getAuthor(), 
-                        savedBook.getIsbn(), 
-                        savedBook.getPublicationDate(), 
-                        savedBook.getGenre(), 
-                        false));
-
-        return borrowingMapper.mapToDTO(borrowing);
+        return mapper.mapToDTO(borrowing);
     }
 
     @Override
     @Transactional
     public BorrowingResponseDTO returnBook(Long borrowingId) {
-        logger.info("Returning book with borrowing ID: {}", borrowingId);
+        log.info("Return request – borrowing {}", borrowingId);
 
-        // Get the current user
-        User user = getCurrentUser();
+        Borrowing borrowing = borrowingRepo.findById(borrowingId)
+                .orElseThrow(() -> new EntityNotFoundException("Borrowing not found " + borrowingId));
 
-        // Get the borrowing
-        Borrowing borrowing = borrowingRepository.findById(borrowingId)
-                .orElseThrow(() -> new EntityNotFoundException("Borrowing not found with ID: " + borrowingId));
+        if (borrowing.isReturned()) throw new IllegalStateException("Book already returned");
 
-        // Check if the book is already returned
-        if (borrowing.isReturned()) {
-            throw new IllegalStateException("Book is already returned");
-        }
+        mapper.returnBook(borrowing);
+        borrowingRepo.save(borrowing);
 
-        // Update the borrowing
-        borrowing.setReturned(true);
-        borrowing.setReturnDate(LocalDate.now());
-        borrowing = borrowingRepository.save(borrowing);
-
-        // Update book availability
         Book book = borrowing.getBook();
         book.setAvailable(true);
-        Book savedBook = bookRepository.save(book);
+        bookRepo.save(book);
+        bookService.emitAvailabilityUpdate(book);
 
-        // Emit book availability update
-        logger.info("Emitting availability update for book ID: {}, Title: '{}', Available: true", 
-                savedBook.getId(), savedBook.getTitle());
-        bookService.updateBook(savedBook.getId(), 
-                new BookRequestDTO(
-                        savedBook.getTitle(), 
-                        savedBook.getAuthor(), 
-                        savedBook.getIsbn(), 
-                        savedBook.getPublicationDate(), 
-                        savedBook.getGenre(), 
-                        true));
+        return mapper.mapToDTO(borrowing);
+    }
 
-        return borrowingMapper.mapToDTO(borrowing);
+    /* ─────────── look‑ups ─────────── */
+
+    @Override
+    @Transactional(readOnly = true)
+    public BorrowingResponseDTO getBorrowingById(Long id) {
+        return mapper.mapToDTO(
+                borrowingRepo.findById(id)
+                        .orElseThrow(() -> new EntityNotFoundException("Borrowing not found " + id)));
     }
 
     @Override
-    public BorrowingResponseDTO getBorrowingById(Long borrowingId) {
-        logger.info("Getting borrowing with ID: {}", borrowingId);
-
-        // Get the current user
-        User user = getCurrentUser();
-
-        // Get the borrowing
-        Borrowing borrowing = borrowingRepository.findById(borrowingId)
-                .orElseThrow(() -> new EntityNotFoundException("Borrowing not found with ID: " + borrowingId));
-
-        return borrowingMapper.mapToDTO(borrowing);
-    }
-
-    @Override
+    @Transactional(readOnly = true)
     public BorrowingHistoryDTO getCurrentUserBorrowingHistory() {
-        logger.info("Getting borrowing history for current user");
-
-        // Get the current user
-        User user = getCurrentUser();
-
-        return getUserBorrowingHistoryInternal(user);
+        return historyForUser(currentUser());
     }
 
     @Override
+    @Transactional(readOnly = true)
     public BorrowingHistoryDTO getUserBorrowingHistory(Long userId) {
-        logger.info("Getting borrowing history for user with ID: {}", userId);
-
-        // Get the current user
-        User currentUser = getCurrentUser();
-
-        // Get the user
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new EntityNotFoundException("User not found with ID: " + userId));
-
-        return getUserBorrowingHistoryInternal(user);
+        User user = userRepo.findById(userId)
+                .orElseThrow(() -> new EntityNotFoundException("User not found " + userId));
+        return historyForUser(user);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<BorrowingResponseDTO> getAllActiveBorrowings() {
-        logger.info("Getting all active borrowings");
-
-        // Get the current user
-        User currentUser = getCurrentUser();
-
-        // Get all active borrowings
-        List<Borrowing> borrowings = borrowingRepository.findByReturned(false);
-
-        return borrowings.stream()
-                .map(borrowingMapper::mapToDTO)
-                .collect(Collectors.toList());
+        return borrowingRepo.findByReturned(false)
+                .stream()
+                .map(mapper::mapToDTO)
+                .toList();
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<BorrowingResponseDTO> getAllOverdueBorrowings() {
-        logger.info("Getting all overdue borrowings");
-
-        // Get the current user
-        User currentUser = getCurrentUser();
-
-        // Get all overdue borrowings
-        List<Borrowing> borrowings = borrowingRepository.findByDueDateBeforeAndReturned(LocalDate.now(), false);
-
-        return borrowings.stream()
-                .map(borrowingMapper::mapToDTO)
-                .collect(Collectors.toList());
+        return borrowingRepo.findByDueDateBeforeAndReturned(LocalDate.now(), false)
+                .stream()
+                .map(mapper::mapToDTO)
+                .toList();
     }
 
     @Override
+    @Transactional(readOnly = true)
     public boolean isOwner(Long borrowingId, String username) {
-        logger.info("Checking if user {} is the owner of borrowing {}", username, borrowingId);
-
-        // Find the borrowing
-        Borrowing borrowing = borrowingRepository.findById(borrowingId)
-                .orElseThrow(() -> new EntityNotFoundException("Borrowing not found with ID: " + borrowingId));
-
-        // Check if the username matches the borrowing's user's username
-        return borrowing.getUser().getUsername().equals(username);
+        return borrowingRepo.findById(borrowingId)
+                .orElseThrow(() -> new EntityNotFoundException("Borrowing not found " + borrowingId))
+                .getUser()
+                .getUsername()
+                .equals(username);
     }
 
-    private User getCurrentUser() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String username = authentication.getName();
+    /* ─────────── helpers ─────────── */
 
-        return userRepository.findByUsername(username)
-                .orElseThrow(() -> new EntityNotFoundException("User not found with username: " + username));
+    private User resolveBorrower(Long targetUserId) {
+        User current = currentUser();
+
+        // When an explicit userId is supplied
+        if (targetUserId != null) {
+            if (!hasAdminOrLibrarian(current))
+                throw new AccessDeniedException("Only admins or librarians can borrow for other users");
+
+            User target = userRepo.findById(targetUserId)
+                    .orElseThrow(() -> new EntityNotFoundException("User not found " + targetUserId));
+
+            if (hasAdminOrLibrarian(target))
+                throw new IllegalArgumentException("Cannot borrow books for admins or librarians");
+
+            log.info("{} borrows for {}", current.getUsername(), target.getUsername());
+            return target;
+        }
+
+        // Self‑borrow
+        if (hasAdminOrLibrarian(current))
+            throw new AccessDeniedException("Admins/Librarians must specify a patron userId");
+
+        return current;
     }
 
-    private BorrowingHistoryDTO getUserBorrowingHistoryInternal(User user) {
-        // Get all borrowings for the user
-        List<Borrowing> borrowings = borrowingRepository.findByUser(user);
+    private BorrowingHistoryDTO historyForUser(User user) {
+        List<Borrowing> rows = borrowingRepo.findByUser(user);
 
-        // Map borrowings to DTOs
-        List<BorrowingResponseDTO> borrowingDTOs = borrowings.stream()
-                .map(borrowingMapper::mapToDTO)
-                .collect(Collectors.toList());
+        int current = (int) rows.stream().filter(b -> !b.isReturned()).count();
+        int overdue = (int) rows.stream().filter(b -> !b.isReturned() && b.isOverdue()).count();
 
-        // Count current and overdue borrowings
-        int currentBorrowings = (int) borrowings.stream()
-                .filter(b -> !b.isReturned())
-                .count();
-
-        int overdueBorrowings = (int) borrowings.stream()
-                .filter(b -> !b.isReturned() && b.isOverdue())
-                .count();
-
-        // Create and return the history DTO
-        BorrowingHistoryDTO historyDTO = new BorrowingHistoryDTO();
-        historyDTO.setUserId(user.getId());
-        historyDTO.setUsername(user.getUsername());
-        historyDTO.setBorrowings(borrowingDTOs);
-        historyDTO.setTotalBorrowings(borrowings.size());
-        historyDTO.setCurrentBorrowings(currentBorrowings);
-        historyDTO.setOverdueBorrowings(overdueBorrowings);
-
-        return historyDTO;
+        return new BorrowingHistoryDTO(
+                user.getId(),
+                user.getUsername(),
+                rows.stream().map(mapper::mapToDTO).toList(),
+                rows.size(),
+                current,
+                overdue);
     }
 
+    private User currentUser() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        return userRepo.findByUsername(auth.getName())
+                .orElseThrow(() -> new EntityNotFoundException("User not found " + auth.getName()));
+    }
+
+    private static boolean hasAdminOrLibrarian(User user) {
+        return user.hasRole(Role.ADMIN) || user.hasRole(Role.LIBRARIAN);
+    }
 }

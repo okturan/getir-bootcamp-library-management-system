@@ -1,27 +1,29 @@
 package com.okturan.getirbootcamplibrarymanagementsystem.dto;
 
-import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import com.okturan.getirbootcamplibrarymanagementsystem.model.Role;
 
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
+import java.util.Set;
+
+import io.swagger.v3.oas.annotations.media.Schema;
+
 @Schema(description = "JWT response")
-public class JwtResponseDTO {
-    
+public record JwtResponseDTO(
     @Schema(description = "JWT token", example = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...")
-    private String token;
-    
+    String token,
+
     @Schema(description = "Token type", example = "Bearer")
-    private String tokenType = "Bearer";
-    
+    String tokenType,
+
     @Schema(description = "Username", example = "johndoe")
-    private String username;
-    
-    public JwtResponseDTO(String token, String username) {
-        this.token = token;
-        this.username = username;
+    String username,
+
+    @Schema(description = "User roles", example = "[PATRON]")
+    Set<Role> roles
+) {
+    /**
+     * Constructor with token, username, and roles (tokenType defaults to "Bearer")
+     */
+    public JwtResponseDTO(String token, String username, Set<Role> roles) {
+        this(token, "Bearer", username, roles);
     }
 }

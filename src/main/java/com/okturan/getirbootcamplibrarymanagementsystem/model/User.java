@@ -2,6 +2,7 @@ package com.okturan.getirbootcamplibrarymanagementsystem.model;
 
 import org.hibernate.proxy.HibernateProxy;
 
+import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -46,20 +47,38 @@ public class User {
     @Column(nullable = false, unique = true)
     private String email;
 
+    private String firstName;
+
+    private String lastName;
+
+    private String address;
+
+    private String phoneNumber;
+
+    private LocalDate dateOfBirth;
+
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id"))
     @Enumerated(EnumType.STRING)
     @Column(name = "role")
     private Set<Role> roles = new HashSet<>();
 
-    private boolean active = true;
-
-    // Constructor with required fields
     public User(String username, String password, String email) {
         this.username = username;
         this.password = password;
         this.email = email;
-        this.roles.add(Role.PATRON); // Default role is patron
+    }
+
+    public User(String username, String password, String email, String firstName, String lastName, 
+                String address, String phoneNumber, LocalDate dateOfBirth) {
+        this.username = username;
+        this.password = password;
+        this.email = email;
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.address = address;
+        this.phoneNumber = phoneNumber;
+        this.dateOfBirth = dateOfBirth;
     }
 
     // Add a role to the user

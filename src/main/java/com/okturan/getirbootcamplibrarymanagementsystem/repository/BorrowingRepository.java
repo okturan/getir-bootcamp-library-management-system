@@ -3,8 +3,8 @@ package com.okturan.getirbootcamplibrarymanagementsystem.repository;
 import com.okturan.getirbootcamplibrarymanagementsystem.model.Book;
 import com.okturan.getirbootcamplibrarymanagementsystem.model.Borrowing;
 import com.okturan.getirbootcamplibrarymanagementsystem.model.User;
+
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;

@@ -1,91 +1,113 @@
 package com.okturan.getirbootcamplibrarymanagementsystem.service.impl;
 
-import com.okturan.getirbootcamplibrarymanagementsystem.model.Role;
+import com.okturan.getirbootcamplibrarymanagementsystem.dto.AdminUserUpdateDTO;
+import com.okturan.getirbootcamplibrarymanagementsystem.dto.UserDetailsDTO;
+import com.okturan.getirbootcamplibrarymanagementsystem.dto.UserUpdateDTO;
+import com.okturan.getirbootcamplibrarymanagementsystem.mapper.UserMapper;
 import com.okturan.getirbootcamplibrarymanagementsystem.model.User;
 import com.okturan.getirbootcamplibrarymanagementsystem.repository.UserRepository;
 import com.okturan.getirbootcamplibrarymanagementsystem.service.UserService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Optional;
-
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
+@Transactional
 public class UserServiceImpl implements UserService {
-
-    private static final Logger logger = LoggerFactory.getLogger(UserServiceImpl.class);
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final UserMapper userMapper;
+
+    private User getById(Long id) {
+        return userRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("User not found with ID: " + id));
+    }
+
+    private User getByUsername(String username) {
+        return userRepository.findByUsername(username)
+                .orElseThrow(() -> new EntityNotFoundException("User not found with username: " + username));
+    }
+
+    private User getByEmail(String email) {
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new EntityNotFoundException("User not found with email: " + email));
+    }
 
     @Override
-    @Transactional
     public User registerUser(User user) {
-        logger.info("Registering new user with username: {}, email: {}", user.getUsername(), user.getEmail());
-        try {
-            // Encode the password before saving
-            user.setPassword(passwordEncoder.encode(user.getPassword()));
-            logger.debug("Password encoded for user: {}", user.getUsername());
+        log.info("Registering user: username={}", user.getUsername());
 
-            // Ensure the user has the PATRON role by default
-            user.addRole(Role.PATRON);
-            logger.debug("Added PATRON role to user: {}", user.getUsername());
-
-            User savedUser = userRepository.save(user);
-            logger.info("User registered successfully: {}, ID: {}", savedUser.getUsername(), savedUser.getId());
-            return savedUser;
-        } catch (Exception e) {
-            logger.error("Failed to register user: {}", user.getUsername(), e);
-            throw e;
-        }
+        // Simply save the user with whatever roles are already set
+        return userRepository.save(user);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<User> findByUsername(String username) {
-        logger.debug("Finding user by username: {}", username);
-        Optional<User> user = userRepository.findByUsername(username);
-        if (user.isPresent()) {
-            logger.debug("User found by username: {}", username);
-        } else {
-            logger.debug("User not found by username: {}", username);
-        }
-        return user;
+    public UserDetailsDTO findByUsername(String username) {
+        User user = getByUsername(username);
+        return userMapper.mapToDetailsDTO(user);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<User> findByEmail(String email) {
-        logger.debug("Finding user by email: {}", email);
-        Optional<User> user = userRepository.findByEmail(email);
-        if (user.isPresent()) {
-            logger.debug("User found by email: {}", email);
-        } else {
-            logger.debug("User not found by email: {}", email);
-        }
-        return user;
+    public UserDetailsDTO findByEmail(String email) {
+        User user = getByEmail(email);
+        return userMapper.mapToDetailsDTO(user);
     }
 
     @Override
     @Transactional(readOnly = true)
     public boolean existsByUsername(String username) {
-        logger.debug("Checking if username exists: {}", username);
-        boolean exists = userRepository.existsByUsername(username);
-        logger.debug("Username {} exists: {}", username, exists);
-        return exists;
+        return userRepository.existsByUsername(username);
     }
 
     @Override
     @Transactional(readOnly = true)
     public boolean existsByEmail(String email) {
-        logger.debug("Checking if email exists: {}", email);
-        boolean exists = userRepository.existsByEmail(email);
-        logger.debug("Email {} exists: {}", email, exists);
-        return exists;
+        return userRepository.existsByEmail(email);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<UserDetailsDTO> findAllUsers(Pageable pageable) {
+        Page<User> usersPage = userRepository.findAll(pageable);
+        return usersPage.map(userMapper::mapToDetailsDTO);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public UserDetailsDTO findById(Long id) {
+        User user = getById(id);
+        return userMapper.mapToDetailsDTO(user);
+    }
+
+    @Override
+    public UserDetailsDTO updateUser(Long id, AdminUserUpdateDTO adminUserUpdateDTO) {
+        log.info("Admin updating user: id={}", id);
+
+        User existingUser = getById(id);
+        userMapper.updateUserFromAdminDto(adminUserUpdateDTO, existingUser);
+
+        return userMapper.mapToDetailsDTO(userRepository.save(existingUser));
+    }
+
+    @Override
+    public UserDetailsDTO updateCurrentUser(String username, UserUpdateDTO userUpdateDTO) {
+        log.info("Self-updating user: username={}", username);
+
+        User existingUser = getByUsername(username);
+        userMapper.updateUserFromDto(userUpdateDTO, existingUser);
+
+        return userMapper.mapToDetailsDTO(userRepository.save(existingUser));
     }
 }

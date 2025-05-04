@@ -5,18 +5,16 @@ import com.okturan.getirbootcamplibrarymanagementsystem.security.CustomAuthentic
 import com.okturan.getirbootcamplibrarymanagementsystem.security.CustomUserDetailsService;
 import com.okturan.getirbootcamplibrarymanagementsystem.security.JwtFilter;
 import com.okturan.getirbootcamplibrarymanagementsystem.security.JwtTokenProvider;
-import com.okturan.getirbootcamplibrarymanagementsystem.service.BorrowingService;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.access.expression.method.DefaultMethodSecurityExpressionHandler;
-import org.springframework.security.access.expression.method.MethodSecurityExpressionHandler;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.http.HttpMethod;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -64,23 +62,25 @@ public class SecurityConfig {
         return authConfig.getAuthenticationManager();
     }
 
+    // Define public endpoints in a single array to reduce maintenance overhead
+    private static final String[] PUBLIC = {
+        "/h2-console/**",
+        "/swagger-ui.html", "/swagger-ui/**", "/swagger-ui/index.html", "/webjars/**",
+        "/v3/api-docs/**", "/v3/api-docs.yaml",
+        "/api/auth/register", "/api/auth/login"
+    };
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(csrf -> csrf.disable()) // Disable CSRF for dev
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        // Public endpoints
-                        .requestMatchers("/h2-console/**").permitAll() // Allow H2 Console
-                        .requestMatchers("/swagger-ui.html").permitAll() // Allow Swagger UI
-                        .requestMatchers("/swagger-ui/**").permitAll() // Allow Swagger UI resources
-                        .requestMatchers("/swagger-ui/index.html").permitAll() // Allow Swagger UI index
-                        .requestMatchers("/webjars/**").permitAll() // Allow Swagger UI webjars
-                        .requestMatchers("/v3/api-docs/**").permitAll() // Allow OpenAPI docs
-                        .requestMatchers("/v3/api-docs.yaml").permitAll() // Allow OpenAPI YAML
-                        .requestMatchers("/api/auth/**").permitAll() // Allow authentication endpoints
+                        // Public endpoints - grouped for easier maintenance
+                        .requestMatchers(PUBLIC).permitAll() // Allow all public endpoints
 
                         // Admin-only endpoints
+                        .requestMatchers("/api/auth/admin/**").hasAuthority("ROLE_ADMIN") // Admin-only registration
                         .requestMatchers("/api/books/admin/**").hasAuthority("ROLE_ADMIN")
 
                         // Admin and Librarian endpoints

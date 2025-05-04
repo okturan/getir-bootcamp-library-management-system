@@ -21,10 +21,6 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 
-/**
- * Entity representing a book borrowing transaction.
- * Tracks who borrowed which book, when it was borrowed, when it's due, and when it was returned.
- */
 @Entity
 @Table(name = "borrowings")
 @Getter
@@ -60,12 +56,6 @@ public class Borrowing {
     @Column(name = "is_returned", nullable = false)
     private boolean returned = false;
 
-    /**
-     * Checks if the borrowing is overdue.
-     * A borrowing is overdue if the due date has passed and the book hasn't been returned.
-     *
-     * @return true if the borrowing is overdue, false otherwise
-     */
     @Transient
     public boolean isOverdue() {
         return !returned && LocalDate.now().isAfter(dueDate);

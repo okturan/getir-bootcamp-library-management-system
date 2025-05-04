@@ -3,9 +3,11 @@ package com.okturan.getirbootcamplibrarymanagementsystem.service;
 import com.okturan.getirbootcamplibrarymanagementsystem.dto.BookAvailabilityDTO;
 import com.okturan.getirbootcamplibrarymanagementsystem.dto.BookRequestDTO;
 import com.okturan.getirbootcamplibrarymanagementsystem.dto.BookResponseDTO;
-import reactor.core.publisher.Flux;
+import com.okturan.getirbootcamplibrarymanagementsystem.model.Book;
 
 import java.util.List;
+
+import reactor.core.publisher.Flux;
 
 public interface BookService {
 
@@ -34,4 +36,6 @@ public interface BookService {
      * @return Flux of BookAvailabilityDTO containing availability updates
      */
     Flux<BookAvailabilityDTO> streamBookAvailabilityUpdates();
+
+    public void emitAvailabilityUpdate(Book book);
 }

@@ -23,4 +23,5 @@ public interface BorrowingService {
     List<BorrowingResponseDTO> getAllOverdueBorrowings();
 
     boolean isOwner(Long borrowingId, String username);
+
 }

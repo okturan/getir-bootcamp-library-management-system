@@ -1,122 +1,109 @@
 package com.okturan.getirbootcamplibrarymanagementsystem.exception;
 
-import jakarta.persistence.EntityNotFoundException;
-import jakarta.validation.ConstraintViolationException;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.time.LocalDateTime;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
+import jakarta.persistence.EntityNotFoundException;
+import jakarta.validation.ConstraintViolationException;
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+    /* ────────── entity / business ────────── */
 
     @ExceptionHandler(EntityNotFoundException.class)
-    @ResponseStatus(HttpStatus.NOT_FOUND)
-    public ResponseEntity<ErrorResponse> handleEntityNotFoundException(EntityNotFoundException ex) {
-        logger.warn("Entity not found: {}", ex.getMessage());
-
-        ErrorResponse errorResponse = new ErrorResponse(
-                HttpStatus.NOT_FOUND.value(),
-                ex.getMessage(),
-                LocalDateTime.now()
-        );
-        return new ResponseEntity<>(errorResponse, HttpStatus.NOT_FOUND);
+    public ResponseEntity<ErrorResponse> handleNotFound(EntityNotFoundException ex) {
+        log.warn("Entity not found – {}", ex.getMessage());
+        return body(HttpStatus.NOT_FOUND, ex.getMessage());
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ResponseEntity<ErrorResponse> handleIllegalArgumentException(IllegalArgumentException ex) {
-        logger.warn("Illegal argument: {}", ex.getMessage());
-
-        ErrorResponse errorResponse = new ErrorResponse(
-                HttpStatus.BAD_REQUEST.value(),
-                ex.getMessage(),
-                LocalDateTime.now()
-        );
-        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+    public ResponseEntity<ErrorResponse> handleIllegalArg(IllegalArgumentException ex) {
+        log.warn("Bad request – {}", ex.getMessage());
+        return body(HttpStatus.BAD_REQUEST, ex.getMessage());
     }
 
+    /* ────────── validation ────────── */
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ResponseEntity<ValidationErrorResponse> handleValidationExceptions(MethodArgumentNotValidException ex) {
-        logger.warn("Validation error in request arguments");
-
-        Map<String, String> errors = new HashMap<>();
-        ex.getBindingResult().getAllErrors().forEach((error) -> {
-            String fieldName = ((FieldError) error).getField();
-            String errorMessage = error.getDefaultMessage();
-            errors.put(fieldName, errorMessage);
-            logger.debug("Validation error: field '{}' - {}", fieldName, errorMessage);
-        });
-
-        ValidationErrorResponse errorResponse = new ValidationErrorResponse(
-                HttpStatus.BAD_REQUEST.value(),
-                "Validation error",
-                LocalDateTime.now(),
-                errors
-        );
-        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+    public ResponseEntity<ValidationErrorResponse> handleBeanValidation(MethodArgumentNotValidException ex) {
+        Map<String, String> errors = ex.getBindingResult()
+                .getFieldErrors()
+                .stream()
+                .collect(Collectors.toMap(
+                        FieldError::getField,
+                        FieldError::getDefaultMessage,
+                        (a, b) -> a));              // keep first
+        log.warn("Bean validation failed – {} field errors", errors.size());
+        return ResponseEntity.badRequest()
+                .body(new ValidationErrorResponse(
+                        HttpStatus.BAD_REQUEST.value(),
+                        "Validation error",
+                        LocalDateTime.now(),
+                        errors));
     }
 
     @ExceptionHandler(ConstraintViolationException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ResponseEntity<ErrorResponse> handleConstraintViolationException(ConstraintViolationException ex) {
-        logger.warn("Constraint violation: {}", ex.getMessage());
-
-        ErrorResponse errorResponse = new ErrorResponse(
-                HttpStatus.BAD_REQUEST.value(),
-                "Validation error: " + ex.getMessage(),
-                LocalDateTime.now()
-        );
-        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+    public ResponseEntity<ErrorResponse> handleConstraintViolation(ConstraintViolationException ex) {
+        log.warn("Constraint violation – {}", ex.getMessage());
+        return body(HttpStatus.BAD_REQUEST, "Validation error: " + ex.getMessage());
     }
+
+    /* ────────── data / security ────────── */
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ErrorResponse> handleDataIntegrity(DataIntegrityViolationException ex) {
+        log.warn("Data integrity violation – {}", ex.getMostSpecificCause().getMessage());
+        return body(HttpStatus.CONFLICT,
+                "Resource conflict: a record with the same unique identifier already exists");
+    }
+
+    @ExceptionHandler(BadCredentialsException.class)
+    public ResponseEntity<ErrorResponse> handleBadCredentials(BadCredentialsException ex) {
+        log.warn("Authentication failed – bad credentials");
+        return body(HttpStatus.UNAUTHORIZED, "Invalid username or password");
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ErrorResponse> handleAccessDenied(AccessDeniedException ex) {
+        log.warn("Access denied – {}", ex.getMessage());
+        return body(HttpStatus.FORBIDDEN, "Access denied: " + ex.getMessage());
+    }
+
+    /* ────────── fallback ────────── */
 
     @ExceptionHandler(Exception.class)
-    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    public ResponseEntity<ErrorResponse> handleAllUncaughtException(Exception ex) {
-        logger.error("Uncaught exception: ", ex);
-
-        ErrorResponse errorResponse = new ErrorResponse(
-                HttpStatus.INTERNAL_SERVER_ERROR.value(),
-                "An unexpected error occurred: " + ex.getMessage(),
-                LocalDateTime.now()
-        );
-        return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+    public ResponseEntity<ErrorResponse> handleUnknown(Exception ex) {
+        log.error("Unhandled exception", ex);
+        return body(HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred");
     }
 
-    // Error response classes
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class ErrorResponse {
-        private int status;
-        private String message;
-        private LocalDateTime timestamp;
+    /* ────────── helpers ────────── */
+
+    private ResponseEntity<ErrorResponse> body(HttpStatus status, String msg) {
+        return ResponseEntity.status(status)
+                .body(new ErrorResponse(status.value(), msg, LocalDateTime.now()));
     }
 
-    @Data
-    @EqualsAndHashCode(callSuper = true)
-    public static class ValidationErrorResponse extends ErrorResponse {
-        private Map<String, String> errors;
+    /* ────────── DTOs (Java 17 records) ────────── */
 
-        public ValidationErrorResponse(int status, String message, LocalDateTime timestamp, Map<String, String> errors) {
-            super(status, message, timestamp);
-            this.errors = errors;
-        }
-    }
+    public record ErrorResponse(int status, String message, LocalDateTime timestamp) { }
+
+    public record ValidationErrorResponse(int status,
+                                          String message,
+                                          LocalDateTime timestamp,
+                                          Map<String, String> errors) { }
 }

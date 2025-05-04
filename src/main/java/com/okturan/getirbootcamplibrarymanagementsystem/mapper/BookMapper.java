@@ -4,58 +4,49 @@ import com.okturan.getirbootcamplibrarymanagementsystem.dto.BookAvailabilityDTO;
 import com.okturan.getirbootcamplibrarymanagementsystem.dto.BookRequestDTO;
 import com.okturan.getirbootcamplibrarymanagementsystem.dto.BookResponseDTO;
 import com.okturan.getirbootcamplibrarymanagementsystem.model.Book;
-import org.springframework.stereotype.Component;
+
+import org.mapstruct.BeanMapping;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+import org.mapstruct.MappingTarget;
+import org.mapstruct.NullValuePropertyMappingStrategy;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 /**
- * Mapper class for converting between Book entity and DTOs
+ * Mapper interface for converting between Book entity and DTOs
  */
-@Component
-public class BookMapper {
-
-    private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ISO_DATE_TIME;
+@Mapper(componentModel = "spring")
+public interface BookMapper {
 
     /**
      * Map Book entity to BookResponseDTO
      */
-    public BookResponseDTO mapToDTO(Book book) {
-        return new BookResponseDTO(
-                book.getId(),
-                book.getTitle(),
-                book.getAuthor(),
-                book.getIsbn(),
-                book.getPublicationDate(),
-                book.getGenre(),
-                book.isAvailable()
-        );
-    }
+    BookResponseDTO mapToDTO(Book book);
 
     /**
      * Map BookRequestDTO to Book entity
      */
-    public Book mapToEntity(BookRequestDTO dto) {
-        Book book = new Book();
-        book.setTitle(dto.getTitle());
-        book.setAuthor(dto.getAuthor());
-        book.setIsbn(dto.getIsbn());
-        book.setPublicationDate(dto.getPublicationDate());
-        book.setGenre(dto.getGenre());
-        book.setAvailable(dto.isAvailable());
-        return book;
-    }
+    @Mapping(target = "id", ignore = true)
+    Book mapToEntity(BookRequestDTO dto);
 
     /**
-     * Create a BookAvailabilityDTO from a Book entity
+     * Update an existing Book entity from BookRequestDTO
      */
-    public BookAvailabilityDTO createAvailabilityDTO(Book book) {
-        return new BookAvailabilityDTO(
-                book.getId(),
-                book.getTitle(),
-                book.getIsbn(),
-                book.isAvailable(),
-                LocalDateTime.now().format(DATE_TIME_FORMATTER)
-        );
+    @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
+    void updateEntityFromDto(BookRequestDTO dto, @MappingTarget Book book);
+
+    /**
+     * Create a BookAvailabilityDTO from a Book entity with current timestamp
+     */
+    @Mapping(target = "timestamp", expression = "java(getCurrentTimestamp())")
+    BookAvailabilityDTO createAvailabilityDTO(Book book);
+
+    /**
+     * Helper method to get current timestamp formatted as ISO date time
+     */
+    default String getCurrentTimestamp() {
+        return LocalDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME);
     }
 }
