@@ -25,7 +25,6 @@ import lombok.extern.slf4j.Slf4j;
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
     private final UserMapper userMapper;
 
     private User getById(Long id) {
@@ -36,11 +35,6 @@ public class UserServiceImpl implements UserService {
     private User getByUsername(String username) {
         return userRepository.findByUsername(username)
                 .orElseThrow(() -> new EntityNotFoundException("User not found with username: " + username));
-    }
-
-    private User getByEmail(String email) {
-        return userRepository.findByEmail(email)
-                .orElseThrow(() -> new EntityNotFoundException("User not found with email: " + email));
     }
 
     @Override

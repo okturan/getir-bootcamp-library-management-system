@@ -1,6 +1,5 @@
 package com.okturan.getirbootcamplibrarymanagementsystem.repository;
 
-import com.okturan.getirbootcamplibrarymanagementsystem.model.Book;
 import com.okturan.getirbootcamplibrarymanagementsystem.model.Borrowing;
 import com.okturan.getirbootcamplibrarymanagementsystem.model.User;
 
@@ -9,7 +8,6 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Optional;
 
 @Repository
 public interface BorrowingRepository extends JpaRepository<Borrowing, Long> {

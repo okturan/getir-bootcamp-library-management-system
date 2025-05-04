@@ -20,13 +20,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
     /* ---------- role‑based helpers ---------- */
 
     /**
-     * Return every user that possesses the given role.
-     * `Distinct` eliminates duplicates that could appear
-     * if a user has more than one role row in the join table.
-     */
-    List<User> findDistinctByRolesContaining(Role role);
-
-    /**
      * True if at least one user holds the requested role.
      */
     boolean existsByRolesContaining(Role role);
