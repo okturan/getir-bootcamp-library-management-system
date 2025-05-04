@@ -72,8 +72,8 @@ public class UserController {
     @Operation(summary = "Get all users", description = "Returns all users with pagination (admin/librarian only)")
     @ApiResponse(responseCode = "200", description = "Users retrieved successfully", content = @Content(mediaType = "application/json", schema = @Schema(implementation = PageDTO.class)))
     public ResponseEntity<PageDTO<UserDetailsDTO>> getAllUsers(
-            @ParameterObject                       // ① unwraps Pageable
-            @PageableDefault(page = 0, size = 20, sort = "id,asc")  // ② sets sensible defaults
+            @ParameterObject
+            @PageableDefault(page = 0, size = 20, sort = "id,asc")
             Pageable pageable) {
         logger.info("Getting all users with pagination");
 

@@ -33,8 +33,6 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class BorrowingController {
 
-    private static final Logger logger = LoggerFactory.getLogger(BorrowingController.class);
-
     private final BorrowingService borrowingService;
 
     @PostMapping("/borrow")

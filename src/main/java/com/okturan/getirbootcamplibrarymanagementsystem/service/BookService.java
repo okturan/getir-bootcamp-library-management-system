@@ -37,5 +37,5 @@ public interface BookService {
      */
     Flux<BookAvailabilityDTO> streamBookAvailabilityUpdates();
 
-    public void emitAvailabilityUpdate(Book book);
+    void emitAvailabilityUpdate(Book book);
 }

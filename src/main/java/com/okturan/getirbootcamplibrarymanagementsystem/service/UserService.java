@@ -14,13 +14,6 @@ public interface UserService {
 
     UserDetailsDTO findByUsername(String username);
 
-    UserDetailsDTO findByEmail(String email);
-
-    boolean existsByUsername(String username);
-
-    boolean existsByEmail(String email);
-
-    // Methods that accept DTOs directly
     UserDetailsDTO updateUser(Long id, AdminUserUpdateDTO adminUserUpdateDTO);
 
     UserDetailsDTO updateCurrentUser(String username, UserUpdateDTO userUpdateDTO);
