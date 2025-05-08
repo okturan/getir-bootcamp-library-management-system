@@ -13,7 +13,6 @@ import org.springframework.stereotype.Component;
 
 /**
  * Bootstrap component that ensures at least one admin user exists in the system.
- * This is necessary for the "admin-only" rule to work properly.
  */
 @Component
 public class AdminUserInitializer implements CommandLineRunner {
@@ -23,10 +22,10 @@ public class AdminUserInitializer implements CommandLineRunner {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     
-    @Value("${admin.username:admin}")
+    @Value("${admin.username}")
     private String adminUsername;
     
-    @Value("${admin.email:admin@example.com}")
+    @Value("${admin.email}")
     private String adminEmail;
     
     @Value("${admin.password}")

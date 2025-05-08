@@ -8,8 +8,6 @@ import com.okturan.getirbootcamplibrarymanagementsystem.dto.UserRegistrationDTO;
 import com.okturan.getirbootcamplibrarymanagementsystem.exception.GlobalExceptionHandler.ErrorResponse;
 import com.okturan.getirbootcamplibrarymanagementsystem.service.AuthService;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -32,8 +30,6 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class AuthController {
 
-    private static final Logger logger = LoggerFactory.getLogger(AuthController.class);
-
     private final AuthService authService;
 
     @PostMapping("/register")
@@ -41,7 +37,6 @@ public class AuthController {
     @ApiResponse(responseCode = "201", description = "User registered successfully", content = @Content(mediaType = "application/json", schema = @Schema(implementation = JwtResponseDTO.class)))
     @ApiResponse(responseCode = "400", description = "Invalid input or username/email already exists", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
     public ResponseEntity<JwtResponseDTO> registerPatron(@Valid @RequestBody UserRegistrationDTO registrationDTO) {
-        logger.info("Public registration request received for username: {}", registrationDTO.username());
         AuthResultDTO result = authService.registerPatron(registrationDTO);
         return ResponseEntity.status(HttpStatus.CREATED).body(new JwtResponseDTO(result.token(), result.username(), result.roles()));
     }
@@ -53,8 +48,6 @@ public class AuthController {
     @ApiResponse(responseCode = "400", description = "Invalid input or username/email already exists", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
     @ApiResponse(responseCode = "403", description = "Forbidden - Only administrators can access this endpoint", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
     public ResponseEntity<JwtResponseDTO> registerWithRole(@Valid @RequestBody AdminUserRegistrationDTO registrationDTO) {
-        logger.info("Admin registration request received for username: {} with role: {}", 
-                registrationDTO.username(), registrationDTO.role());
         AuthResultDTO result = authService.registerWithRole(registrationDTO);
         return ResponseEntity.status(HttpStatus.CREATED).body(new JwtResponseDTO(result.token(), result.username(), result.roles()));
     }

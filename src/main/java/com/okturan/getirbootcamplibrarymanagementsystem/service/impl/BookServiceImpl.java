@@ -7,18 +7,16 @@ import com.okturan.getirbootcamplibrarymanagementsystem.mapper.BookMapper;
 import com.okturan.getirbootcamplibrarymanagementsystem.model.Book;
 import com.okturan.getirbootcamplibrarymanagementsystem.repository.BookRepository;
 import com.okturan.getirbootcamplibrarymanagementsystem.service.BookService;
-
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
-
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Sinks;
 import reactor.core.scheduler.Schedulers;
+
+import java.util.List;
 
 @Slf4j
 @Service
@@ -38,9 +36,9 @@ public class BookServiceImpl implements BookService {
         if (bookRepository.existsByIsbn(dto.isbn())) {
             throw new IllegalArgumentException("Book with ISBN " + dto.isbn() + " already exists");
         }
-        Book saved = bookRepository.save(bookMapper.mapToEntity(dto));
-        log.info("Created book {} ({})", saved.getTitle(), saved.getId());
-        return bookMapper.mapToDTO(saved);
+        Book savedBook = bookRepository.save(bookMapper.mapToEntity(dto));
+        log.info("Created book {} ({})", savedBook.getTitle(), savedBook.getId());
+        return bookMapper.mapToDTO(savedBook);
     }
 
     @Override
@@ -82,7 +80,9 @@ public class BookServiceImpl implements BookService {
         Book updated = bookRepository.save(book);
         log.info("Updated book {} ({})", updated.getTitle(), updated.getId());
 
-        if (availabilityChanged) emitAvailabilityUpdate(updated);
+        if (availabilityChanged) {
+            emitAvailabilityUpdate(updated);
+        }
 
         return bookMapper.mapToDTO(updated);
     }
