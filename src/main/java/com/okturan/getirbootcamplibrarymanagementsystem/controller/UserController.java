@@ -80,7 +80,6 @@ public class UserController {
         Page<UserDetailsDTO> userDTOs = userService.findAllUsers(pageable);
         logger.debug("Retrieved {} users", userDTOs.getTotalElements());
 
-        // Convert Page to PageDTO to ensure stable JSON structure
         PageDTO<UserDetailsDTO> pageDTO = PageDTO.from(userDTOs);
         return ResponseEntity.ok(pageDTO);
     }

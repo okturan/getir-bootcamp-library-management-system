@@ -33,9 +33,6 @@ public record BookRequestDTO(
     @Schema(description = "Genre of the book", example = "Fiction")
     @NotBlank(message = "Genre is required")
     @Size(max = 100, message = "Genre cannot exceed 100 characters")
-    String genre,
-
-    @Schema(description = "Availability status of the book", example = "true", defaultValue = "true")
-    boolean available
+    String genre
 ) {
 }

@@ -11,6 +11,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -57,8 +58,8 @@ public class Book {
     @Column(nullable = false)
     private String genre;
 
-    @Column(nullable = false)
-    private boolean available = true;
+    @Transient
+    private Boolean available;
 
     @Override
     public boolean equals(Object o) {

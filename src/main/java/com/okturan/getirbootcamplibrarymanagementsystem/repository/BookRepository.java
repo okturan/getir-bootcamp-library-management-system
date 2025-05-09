@@ -3,23 +3,17 @@ package com.okturan.getirbootcamplibrarymanagementsystem.repository;
 import com.okturan.getirbootcamplibrarymanagementsystem.model.Book;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface BookRepository extends JpaRepository<Book, Long> {
+
+public interface BookRepository extends JpaRepository<Book, Long>, JpaSpecificationExecutor<Book> {
 
     Optional<Book> findByIsbn(String isbn);
-
-    List<Book> findByAuthorContainingIgnoreCase(String author);
-
-    List<Book> findByTitleContainingIgnoreCase(String title);
-
-    List<Book> findByGenreContainingIgnoreCase(String genre);
-
-    List<Book> findByAvailable(boolean available);
 
     boolean existsByIsbn(String isbn);
 }

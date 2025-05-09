@@ -3,24 +3,15 @@ package com.okturan.getirbootcamplibrarymanagementsystem.controller;
 import com.okturan.getirbootcamplibrarymanagementsystem.dto.BookAvailabilityDTO;
 import com.okturan.getirbootcamplibrarymanagementsystem.dto.BookRequestDTO;
 import com.okturan.getirbootcamplibrarymanagementsystem.dto.BookResponseDTO;
+import com.okturan.getirbootcamplibrarymanagementsystem.dto.BookSearchFilterDTO;
 import com.okturan.getirbootcamplibrarymanagementsystem.service.BookService;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -31,15 +22,15 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
 
 @RestController
 @RequestMapping("/api/books")
 @Tag(name = "Book Management", description = "Operations for managing books in the library system")
 @RequiredArgsConstructor
+@Slf4j
 public class BookController {
-
-    private static final Logger logger = LoggerFactory.getLogger(BookController.class);
 
     private final BookService bookService;
 
@@ -102,50 +93,24 @@ public class BookController {
         return ResponseEntity.noContent().build();
     }
 
-    @GetMapping("/search/author")
-    @Operation(summary = "Find books by author", description = "Returns a list of books by a specific author")
-    @ApiResponse(responseCode = "200", description = "List of books retrieved successfully", content = @Content(mediaType = "application/json", schema = @Schema(implementation = BookResponseDTO.class)))
-    public ResponseEntity<List<BookResponseDTO>> findBooksByAuthor(@RequestParam String author) {
-        List<BookResponseDTO> books = bookService.findBooksByAuthor(author);
-        return ResponseEntity.ok(books);
+    @GetMapping("/search")
+    @Operation(summary = "Search books by any combination of filters")
+    public List<BookResponseDTO> searchBooks(@ModelAttribute BookSearchFilterDTO filter) {
+        return bookService.search(filter);
     }
-
-    @GetMapping("/search/title")
-    @Operation(summary = "Find books by title", description = "Returns a list of books containing the specified title")
-    @ApiResponse(responseCode = "200", description = "List of books retrieved successfully", content = @Content(mediaType = "application/json", schema = @Schema(implementation = BookResponseDTO.class)))
-    public ResponseEntity<List<BookResponseDTO>> findBooksByTitle(@RequestParam String title) {
-        List<BookResponseDTO> books = bookService.findBooksByTitle(title);
-        return ResponseEntity.ok(books);
-    }
-
-    @GetMapping("/search/genre")
-    @Operation(summary = "Find books by genre", description = "Returns a list of books in a specific genre")
-    @ApiResponse(responseCode = "200", description = "List of books retrieved successfully", content = @Content(mediaType = "application/json", schema = @Schema(implementation = BookResponseDTO.class)))
-    public ResponseEntity<List<BookResponseDTO>> findBooksByGenre(@RequestParam String genre) {
-        List<BookResponseDTO> books = bookService.findBooksByGenre(genre);
-        return ResponseEntity.ok(books);
-    }
-
-    @GetMapping("/search/available")
-    @Operation(summary = "Find books by availability", description = "Returns a list of books based on their availability status")
-    @ApiResponse(responseCode = "200", description = "List of books retrieved successfully", content = @Content(mediaType = "application/json", schema = @Schema(implementation = BookResponseDTO.class)))
-    public ResponseEntity<List<BookResponseDTO>> findBooksByAvailability(@RequestParam boolean available) {
-        List<BookResponseDTO> books = bookService.findBooksByAvailability(available);
-        return ResponseEntity.ok(books);
-    }
-
+    
     @GetMapping(path = "/availability/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     @Operation(summary = "Stream real-time book availability updates", description = "Returns a stream of Server-Sent Events with real-time book availability updates")
     @ApiResponse(responseCode = "200", description = "Stream of book availability updates", content = @Content(mediaType = MediaType.TEXT_EVENT_STREAM_VALUE, schema = @Schema(implementation = BookAvailabilityDTO.class)))
     public Flux<ServerSentEvent<BookAvailabilityDTO>> streamBookAvailability() {
-        logger.info("Client connected to book availability stream");
+        log.info("Client connected to book availability stream");
         return bookService.streamBookAvailabilityUpdates()
                 .map(availabilityDTO -> ServerSentEvent.<BookAvailabilityDTO>builder()
                         .id(String.valueOf(availabilityDTO.id()))
                         .event("book-availability-update")
                         .data(availabilityDTO)
                         .build())
-                .doOnCancel(() -> logger.info("Client disconnected from book availability stream"));
+                .doOnCancel(() -> log.info("Client disconnected from book availability stream"));
     }
 
 }

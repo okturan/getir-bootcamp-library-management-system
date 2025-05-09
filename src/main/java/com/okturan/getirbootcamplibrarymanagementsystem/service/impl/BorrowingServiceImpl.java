@@ -49,16 +49,17 @@ public class BorrowingServiceImpl implements BorrowingService {
         Book book = bookRepo.findById(req.bookId())
                             .orElseThrow(() -> new EntityNotFoundException("Book not found " + req.bookId()));
 
-        if (!book.isAvailable()) throw new IllegalStateException("Book is not available");
+        // Check if the book is already borrowed
+        if (borrowingRepo.existsByBookAndReturnedFalse(book)) {
+            throw new IllegalStateException("Book is not available");
+        }
 
         Borrowing borrowing = new Borrowing();
         mapper.initBorrowing(borrowing, book, borrower, req);
 
         borrowingRepo.save(borrowing);
 
-        // Flip availability once and emit
-        book.setAvailable(false);
-        bookRepo.save(book);
+        // Emit availability update (availability is now determined by borrowing status)
         bookService.emitAvailabilityUpdate(book);
 
         return mapper.mapToDTO(borrowing);
@@ -78,8 +79,7 @@ public class BorrowingServiceImpl implements BorrowingService {
         borrowingRepo.save(borrowing);
 
         Book book = borrowing.getBook();
-        book.setAvailable(true);
-        bookRepo.save(book);
+        // Emit availability update (availability is determined by borrowing status)
         bookService.emitAvailabilityUpdate(book);
 
         return mapper.mapToDTO(borrowing);
