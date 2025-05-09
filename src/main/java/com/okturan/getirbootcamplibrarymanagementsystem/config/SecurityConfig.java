@@ -21,75 +21,85 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    // Define public endpoints in a single array to reduce maintenance overhead
-    private static final String[] PUBLIC = {
-            "/h2-console/**",
-            "/swagger-ui.html", "/swagger-ui/**", "/swagger-ui/index.html", "/webjars/**",
-            "/v3/api-docs/**", "/v3/api-docs.yaml",
-            "/api/auth/register", "/api/auth/login"
-    };
-    private final JwtTokenProvider jwtTokenProvider;
-    private final CustomUserDetailsService userDetailsService;
-    private final CustomAuthenticationEntryPoint authenticationEntryPoint;
-    private final CustomAccessDeniedHandler accessDeniedHandler;
+	// Define public endpoints in a single array to reduce maintenance overhead
+	private static final String[] PUBLIC = { "/h2-console/**", "/swagger-ui.html", "/swagger-ui/**",
+			"/swagger-ui/index.html", "/webjars/**", "/v3/api-docs/**", "/v3/api-docs.yaml", "/api/auth/register",
+			"/api/auth/login" };
 
-    @Bean
-    public JwtFilter jwtFilter() {
-        return new JwtFilter(jwtTokenProvider);
-    }
+	private final JwtTokenProvider jwtTokenProvider;
 
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
+	private final CustomUserDetailsService userDetailsService;
 
-    @Bean
-    public DaoAuthenticationProvider authenticationProvider() {
-        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
-        authProvider.setUserDetailsService(userDetailsService);
-        authProvider.setPasswordEncoder(passwordEncoder());
-        return authProvider;
-    }
+	private final CustomAuthenticationEntryPoint authenticationEntryPoint;
 
-    @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration authConfig) throws Exception {
-        return authConfig.getAuthenticationManager();
-    }
+	private final CustomAccessDeniedHandler accessDeniedHandler;
 
-    @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http
-                .csrf(csrf -> csrf.disable()) // Disable CSRF for dev
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(auth -> auth
-                        // Public endpoints - grouped for easier maintenance
-                        .requestMatchers(PUBLIC).permitAll() // Allow all public endpoints
+	@Bean
+	public JwtFilter jwtFilter() {
+		return new JwtFilter(jwtTokenProvider);
+	}
 
-                        // Admin-only endpoints
-                        .requestMatchers("/api/auth/admin/**").hasAuthority("ROLE_ADMIN") // Admin-only registration
-                        .requestMatchers("/api/books/admin/**").hasAuthority("ROLE_ADMIN")
+	@Bean
+	public PasswordEncoder passwordEncoder() {
+		return new BCryptPasswordEncoder();
+	}
 
-                        // Admin and Librarian endpoints
-                        .requestMatchers(HttpMethod.POST, "/api/books/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_LIBRARIAN")
-                        .requestMatchers(HttpMethod.PUT, "/api/books/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_LIBRARIAN")
-                        .requestMatchers(HttpMethod.DELETE, "/api/books/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_LIBRARIAN")
+	@Bean
+	public DaoAuthenticationProvider authenticationProvider() {
+		DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
+		authProvider.setUserDetailsService(userDetailsService);
+		authProvider.setPasswordEncoder(passwordEncoder());
+		return authProvider;
+	}
 
-                        // All authenticated users (including patrons) can access read-only endpoints
-                        .requestMatchers(HttpMethod.GET, "/api/books/**").authenticated()
+	@Bean
+	public AuthenticationManager authenticationManager(AuthenticationConfiguration authConfig) throws Exception {
+		return authConfig.getAuthenticationManager();
+	}
 
-                        // Any other request requires authentication
-                        .anyRequest().authenticated()
-                )
-                .exceptionHandling(exceptions -> exceptions
-                        .authenticationEntryPoint(authenticationEntryPoint)
-                        .accessDeniedHandler(accessDeniedHandler)
-                )
-                .headers(headers -> headers
-                        .frameOptions(frame -> frame.sameOrigin()) // Allow H2 Console frames
-                )
-                .formLogin(form -> form.disable()) // Disable login form (optional, for pure APIs)
-                .authenticationProvider(authenticationProvider())
-                .addFilterBefore(jwtFilter(), UsernamePasswordAuthenticationFilter.class);
-        return http.build();
-    }
+	@Bean
+	public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+		http.csrf(csrf -> csrf.disable()) // Disable CSRF for dev
+			.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+			.authorizeHttpRequests(auth -> auth
+				// Public endpoints - grouped for easier maintenance
+				.requestMatchers(PUBLIC)
+				.permitAll() // Allow all public endpoints
+
+				// Admin-only endpoints
+				.requestMatchers("/api/auth/admin/**")
+				.hasAuthority("ROLE_ADMIN") // Admin-only registration
+				.requestMatchers("/api/books/admin/**")
+				.hasAuthority("ROLE_ADMIN")
+
+				// Admin and Librarian endpoints
+				.requestMatchers(HttpMethod.POST, "/api/books/**")
+				.hasAnyAuthority("ROLE_ADMIN", "ROLE_LIBRARIAN")
+				.requestMatchers(HttpMethod.PUT, "/api/books/**")
+				.hasAnyAuthority("ROLE_ADMIN", "ROLE_LIBRARIAN")
+				.requestMatchers(HttpMethod.DELETE, "/api/books/**")
+				.hasAnyAuthority("ROLE_ADMIN", "ROLE_LIBRARIAN")
+
+				// All authenticated users (including patrons) can access read-only
+				// endpoints
+				.requestMatchers(HttpMethod.GET, "/api/books/**")
+				.authenticated()
+
+				// Any other request requires authentication
+				.anyRequest()
+				.authenticated())
+			.exceptionHandling(exceptions -> exceptions.authenticationEntryPoint(authenticationEntryPoint)
+				.accessDeniedHandler(accessDeniedHandler))
+			.headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()) // Allow
+																					// H2
+																					// Console
+																					// frames
+			)
+			.formLogin(form -> form.disable()) // Disable login form (optional, for pure
+												// APIs)
+			.authenticationProvider(authenticationProvider())
+			.addFilterBefore(jwtFilter(), UsernamePasswordAuthenticationFilter.class);
+		return http.build();
+	}
+
 }

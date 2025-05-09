@@ -20,89 +20,92 @@ import java.util.stream.Collectors;
 @Component
 public class JwtTokenProvider {
 
-    private static final Logger logger = LoggerFactory.getLogger(JwtTokenProvider.class);
+	private static final Logger logger = LoggerFactory.getLogger(JwtTokenProvider.class);
 
-    private static final String AUTHORITIES_KEY = "auth";
-    private static final long TOKEN_VALIDITY_MILLISECONDS = 86400000; // 24 hours
+	private static final String AUTHORITIES_KEY = "auth";
 
-    private final SecretKey key;
-    private final UserDetailsService userDetailsService;
+	private static final long TOKEN_VALIDITY_MILLISECONDS = 86400000; // 24 hours
 
-    public JwtTokenProvider(UserDetailsService userDetailsService) {
-        // Generate a secure key for HS512 algorithm
-        // In production, this should be externalized and properly secured
-        this.key = Keys.secretKeyFor(SignatureAlgorithm.HS512);
-        this.userDetailsService = userDetailsService;
-    }
+	private final SecretKey key;
 
-    public String createToken(Authentication authentication) {
-        logger.debug("Creating JWT token for user: {}", authentication.getName());
+	private final UserDetailsService userDetailsService;
 
-        try {
-            String authorities = authentication.getAuthorities().stream()
-                    .map(GrantedAuthority::getAuthority)
-                    .collect(Collectors.joining(","));
+	public JwtTokenProvider(UserDetailsService userDetailsService) {
+		// Generate a secure key for HS512 algorithm
+		// In production, this should be externalized and properly secured
+		this.key = Keys.secretKeyFor(SignatureAlgorithm.HS512);
+		this.userDetailsService = userDetailsService;
+	}
 
-            logger.debug("User authorities: {}", authorities);
+	public String createToken(Authentication authentication) {
+		logger.debug("Creating JWT token for user: {}", authentication.getName());
 
-            long now = (new Date()).getTime();
-            Date validity = new Date(now + TOKEN_VALIDITY_MILLISECONDS);
+		try {
+			String authorities = authentication.getAuthorities()
+				.stream()
+				.map(GrantedAuthority::getAuthority)
+				.collect(Collectors.joining(","));
 
-            String token = Jwts.builder()
-                    .setSubject(authentication.getName())
-                    .claim(AUTHORITIES_KEY, authorities)
-                    .signWith(key, SignatureAlgorithm.HS512)
-                    .setExpiration(validity)
-                    .compact();
+			logger.debug("User authorities: {}", authorities);
 
-            logger.info("JWT token created successfully for user: {}", authentication.getName());
-            logger.debug("Token expiration: {}", validity);
+			long now = (new Date()).getTime();
+			Date validity = new Date(now + TOKEN_VALIDITY_MILLISECONDS);
 
-            return token;
-        } catch (Exception e) {
-            logger.error("Error creating JWT token for user: {}", authentication.getName(), e);
-            throw e;
-        }
-    }
+			String token = Jwts.builder()
+				.setSubject(authentication.getName())
+				.claim(AUTHORITIES_KEY, authorities)
+				.signWith(key, SignatureAlgorithm.HS512)
+				.setExpiration(validity)
+				.compact();
 
-    public Authentication getAuthentication(String token) {
-        logger.debug("Getting authentication from JWT token");
+			logger.info("JWT token created successfully for user: {}", authentication.getName());
+			logger.debug("Token expiration: {}", validity);
 
-        try {
-            Claims claims = Jwts.parserBuilder()
-                    .setSigningKey(key)
-                    .build()
-                    .parseClaimsJws(token)
-                    .getBody();
+			return token;
+		}
+		catch (Exception e) {
+			logger.error("Error creating JWT token for user: {}", authentication.getName(), e);
+			throw e;
+		}
+	}
 
-            String username = claims.getSubject();
-            logger.debug("Username from token: {}", username);
+	public Authentication getAuthentication(String token) {
+		logger.debug("Getting authentication from JWT token");
 
-            // Load user details from the database
-            UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-            logger.debug("User details loaded for: {}", username);
+		try {
+			Claims claims = Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token).getBody();
 
-            Authentication authentication = new UsernamePasswordAuthenticationToken(
-                    userDetails, token, userDetails.getAuthorities());
+			String username = claims.getSubject();
+			logger.debug("Username from token: {}", username);
 
-            logger.info("Authentication created for user: {}", username);
-            return authentication;
-        } catch (Exception e) {
-            logger.error("Error getting authentication from token", e);
-            throw e;
-        }
-    }
+			// Load user details from the database
+			UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+			logger.debug("User details loaded for: {}", username);
 
-    public boolean validateToken(String token) {
-        logger.debug("Validating JWT token");
+			Authentication authentication = new UsernamePasswordAuthenticationToken(userDetails, token,
+					userDetails.getAuthorities());
 
-        try {
-            Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token);
-            logger.debug("JWT token is valid");
-            return true;
-        } catch (Exception e) {
-            logger.warn("Invalid JWT token: {}", e.getMessage());
-            return false;
-        }
-    }
+			logger.info("Authentication created for user: {}", username);
+			return authentication;
+		}
+		catch (Exception e) {
+			logger.error("Error getting authentication from token", e);
+			throw e;
+		}
+	}
+
+	public boolean validateToken(String token) {
+		logger.debug("Validating JWT token");
+
+		try {
+			Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token);
+			logger.debug("JWT token is valid");
+			return true;
+		}
+		catch (Exception e) {
+			logger.warn("Invalid JWT token: {}", e.getMessage());
+			return false;
+		}
+	}
+
 }

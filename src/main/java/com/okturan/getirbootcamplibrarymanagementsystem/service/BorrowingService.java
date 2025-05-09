@@ -8,20 +8,20 @@ import java.util.List;
 
 public interface BorrowingService {
 
-    BorrowingResponseDTO borrowBook(BorrowingRequestDTO borrowingRequestDTO);
+	BorrowingResponseDTO borrowBook(BorrowingRequestDTO borrowingRequestDTO);
 
-    BorrowingResponseDTO returnBook(Long borrowingId);
+	BorrowingResponseDTO returnBook(Long borrowingId);
 
-    BorrowingResponseDTO getBorrowingById(Long borrowingId);
+	BorrowingResponseDTO getBorrowingById(Long borrowingId);
 
-    BorrowingHistoryDTO getCurrentUserBorrowingHistory();
+	BorrowingHistoryDTO getCurrentUserBorrowingHistory();
 
-    BorrowingHistoryDTO getUserBorrowingHistory(Long userId);
+	BorrowingHistoryDTO getUserBorrowingHistory(Long userId);
 
-    List<BorrowingResponseDTO> getAllActiveBorrowings();
+	List<BorrowingResponseDTO> getAllActiveBorrowings();
 
-    List<BorrowingResponseDTO> getAllOverdueBorrowings();
+	List<BorrowingResponseDTO> getAllOverdueBorrowings();
 
-    boolean isOwner(Long borrowingId, String username);
+	boolean isOwner(Long borrowingId, String username);
 
 }

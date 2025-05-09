@@ -10,16 +10,17 @@ import java.util.Optional;
 @Repository
 public interface UserRepository extends JpaRepository<User, Long> {
 
-    /* ---------- single‑column look‑ups ---------- */
+	/* ---------- single‑column look‑ups ---------- */
 
-    Optional<User> findByUsername(String username);
+	Optional<User> findByUsername(String username);
 
-    Optional<User> findByEmail(String email);
+	Optional<User> findByEmail(String email);
 
-    /* ---------- role‑based helpers ---------- */
+	/* ---------- role‑based helpers ---------- */
 
-    /**
-     * True if at least one user holds the requested role.
-     */
-    boolean existsByRolesContaining(Role role);
+	/**
+	 * True if at least one user holds the requested role.
+	 */
+	boolean existsByRolesContaining(Role role);
+
 }

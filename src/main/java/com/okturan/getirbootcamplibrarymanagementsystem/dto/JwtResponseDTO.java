@@ -7,22 +7,17 @@ import java.util.Set;
 
 @Schema(description = "JWT response")
 public record JwtResponseDTO(
-        @Schema(description = "JWT token", example = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...")
-        String token,
+		@Schema(description = "JWT token", example = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...") String token,
 
-        @Schema(description = "Token type", example = "Bearer")
-        String tokenType,
+		@Schema(description = "Token type", example = "Bearer") String tokenType,
 
-        @Schema(description = "Username", example = "johndoe")
-        String username,
+		@Schema(description = "Username", example = "johndoe") String username,
 
-        @Schema(description = "User roles", example = "[PATRON]")
-        Set<Role> roles
-) {
-    /**
-     * Constructor with token, username, and roles (tokenType defaults to "Bearer")
-     */
-    public JwtResponseDTO(String token, String username, Set<Role> roles) {
-        this(token, "Bearer", username, roles);
-    }
+		@Schema(description = "User roles", example = "[PATRON]") Set<Role> roles) {
+	/**
+	 * Constructor with token, username, and roles (tokenType defaults to "Bearer")
+	 */
+	public JwtResponseDTO(String token, String username, Set<Role> roles) {
+		this(token, "Bearer", username, roles);
+	}
 }

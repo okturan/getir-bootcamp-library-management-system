@@ -12,18 +12,19 @@ import java.time.format.DateTimeFormatter;
 @Mapper(componentModel = "spring")
 public interface BookMapper {
 
-    BookResponseDTO mapToDTO(Book book);
+	BookResponseDTO mapToDTO(Book book);
 
-    @Mapping(target = "id", ignore = true)
-    Book mapToEntity(BookRequestDTO dto);
+	@Mapping(target = "id", ignore = true)
+	Book mapToEntity(BookRequestDTO dto);
 
-    @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
-    void updateEntityFromDto(BookRequestDTO dto, @MappingTarget Book book);
+	@BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
+	void updateEntityFromDto(BookRequestDTO dto, @MappingTarget Book book);
 
-    @Mapping(target = "timestamp", expression = "java(getCurrentTimestamp())")
-    BookAvailabilityDTO createAvailabilityDTO(Book book);
+	@Mapping(target = "timestamp", expression = "java(getCurrentTimestamp())")
+	BookAvailabilityDTO createAvailabilityDTO(Book book);
 
-    default String getCurrentTimestamp() {
-        return LocalDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME);
-    }
+	default String getCurrentTimestamp() {
+		return LocalDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME);
+	}
+
 }

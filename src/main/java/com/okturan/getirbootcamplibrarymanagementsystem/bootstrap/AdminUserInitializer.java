@@ -16,54 +16,53 @@ import org.springframework.stereotype.Component;
 @Component
 public class AdminUserInitializer implements CommandLineRunner {
 
-    private static final Logger logger = LoggerFactory.getLogger(AdminUserInitializer.class);
+	private static final Logger logger = LoggerFactory.getLogger(AdminUserInitializer.class);
 
-    private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
+	private final UserRepository userRepository;
 
-    @Value("${admin.username}")
-    private String adminUsername;
+	private final PasswordEncoder passwordEncoder;
 
-    @Value("${admin.email}")
-    private String adminEmail;
+	@Value("${admin.username}")
+	private String adminUsername;
 
-    @Value("${admin.password}")
-    private String adminPassword;
+	@Value("${admin.email}")
+	private String adminEmail;
 
-    public AdminUserInitializer(UserRepository userRepository, PasswordEncoder passwordEncoder) {
-        this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
-    }
+	@Value("${admin.password}")
+	private String adminPassword;
 
-    @Override
-    public void run(String... args) {
-        // Check if any admin user exists
-        if (!userRepository.existsByRolesContaining(Role.ADMIN)) {
-            logger.info("No admin user found. Creating initial admin user.");
+	public AdminUserInitializer(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+		this.userRepository = userRepository;
+		this.passwordEncoder = passwordEncoder;
+	}
 
-            // Validate that admin password is set
-            if (adminPassword == null || adminPassword.trim().isEmpty()) {
-                logger.error("Admin password environment variable not set. Cannot create admin user.");
-                logger.error("Please set the 'admin.password' environment variable and restart the application.");
-                return;
-            }
+	@Override
+	public void run(String... args) {
+		// Check if any admin user exists
+		if (!userRepository.existsByRolesContaining(Role.ADMIN)) {
+			logger.info("No admin user found. Creating initial admin user.");
 
-            // Create admin user
-            User adminUser = new User(
-                    adminUsername,
-                    passwordEncoder.encode(adminPassword),
-                    adminEmail
-            );
+			// Validate that admin password is set
+			if (adminPassword == null || adminPassword.trim().isEmpty()) {
+				logger.error("Admin password environment variable not set. Cannot create admin user.");
+				logger.error("Please set the 'admin.password' environment variable and restart the application.");
+				return;
+			}
 
-            // Clear default PATRON role and set ADMIN role
-            adminUser.getRoles().clear();
-            adminUser.addRole(Role.ADMIN);
+			// Create admin user
+			User adminUser = new User(adminUsername, passwordEncoder.encode(adminPassword), adminEmail);
 
-            // Save admin user
-            User savedAdmin = userRepository.save(adminUser);
-            logger.info("Initial admin user created with ID: {}", savedAdmin.getId());
-        } else {
-            logger.info("Admin user already exists. Skipping initialization.");
-        }
-    }
+			// Clear default PATRON role and set ADMIN role
+			adminUser.getRoles().clear();
+			adminUser.addRole(Role.ADMIN);
+
+			// Save admin user
+			User savedAdmin = userRepository.save(adminUser);
+			logger.info("Initial admin user created with ID: {}", savedAdmin.getId());
+		}
+		else {
+			logger.info("Admin user already exists. Skipping initialization.");
+		}
+	}
+
 }

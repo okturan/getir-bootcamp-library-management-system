@@ -25,65 +25,65 @@ import java.util.List;
 @Slf4j
 public class BookController implements BookApi {
 
-    private final BookService bookService;
+	private final BookService bookService;
 
-    @Override
-    @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'LIBRARIAN')")
-    public ResponseEntity<BookResponseDTO> createBook(
-            @Valid @RequestBody BookRequestDTO bookRequestDTO) {
-        BookResponseDTO createdBook = bookService.createBook(bookRequestDTO);
-        return new ResponseEntity<>(createdBook, HttpStatus.CREATED);
-    }
+	@Override
+	@PostMapping
+	@PreAuthorize("hasAnyRole('ADMIN', 'LIBRARIAN')")
+	public ResponseEntity<BookResponseDTO> createBook(@Valid @RequestBody BookRequestDTO bookRequestDTO) {
+		BookResponseDTO createdBook = bookService.createBook(bookRequestDTO);
+		return new ResponseEntity<>(createdBook, HttpStatus.CREATED);
+	}
 
-    @Override
-    @GetMapping("/{id}")
-    public ResponseEntity<BookResponseDTO> getBookById(@PathVariable Long id) {
-        BookResponseDTO book = bookService.getBookById(id);
-        return ResponseEntity.ok(book);
-    }
+	@Override
+	@GetMapping("/{id}")
+	public ResponseEntity<BookResponseDTO> getBookById(@PathVariable Long id) {
+		BookResponseDTO book = bookService.getBookById(id);
+		return ResponseEntity.ok(book);
+	}
 
-    @GetMapping("/isbn/{isbn}")
-    public ResponseEntity<BookResponseDTO> getBookByIsbn(@PathVariable String isbn) {
-        BookResponseDTO book = bookService.getBookByIsbn(isbn);
-        return ResponseEntity.ok(book);
-    }
+	@GetMapping("/isbn/{isbn}")
+	public ResponseEntity<BookResponseDTO> getBookByIsbn(@PathVariable String isbn) {
+		BookResponseDTO book = bookService.getBookByIsbn(isbn);
+		return ResponseEntity.ok(book);
+	}
 
-    @GetMapping
-    public ResponseEntity<List<BookResponseDTO>> getAllBooks() {
-        List<BookResponseDTO> books = bookService.getAllBooks();
-        return ResponseEntity.ok(books);
-    }
+	@GetMapping
+	public ResponseEntity<List<BookResponseDTO>> getAllBooks() {
+		List<BookResponseDTO> books = bookService.getAllBooks();
+		return ResponseEntity.ok(books);
+	}
 
-    @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'LIBRARIAN')")
-    public ResponseEntity<BookResponseDTO> updateBook(@PathVariable Long id,
-                                                      @Valid @RequestBody BookRequestDTO bookRequestDTO) {
-        BookResponseDTO updatedBook = bookService.updateBook(id, bookRequestDTO);
-        return ResponseEntity.ok(updatedBook);
-    }
+	@PutMapping("/{id}")
+	@PreAuthorize("hasAnyRole('ADMIN', 'LIBRARIAN')")
+	public ResponseEntity<BookResponseDTO> updateBook(@PathVariable Long id,
+			@Valid @RequestBody BookRequestDTO bookRequestDTO) {
+		BookResponseDTO updatedBook = bookService.updateBook(id, bookRequestDTO);
+		return ResponseEntity.ok(updatedBook);
+	}
 
-    @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'LIBRARIAN')")
-    public ResponseEntity<Void> deleteBook(@PathVariable Long id) {
-        bookService.deleteBook(id);
-        return ResponseEntity.noContent().build();
-    }
+	@DeleteMapping("/{id}")
+	@PreAuthorize("hasAnyRole('ADMIN', 'LIBRARIAN')")
+	public ResponseEntity<Void> deleteBook(@PathVariable Long id) {
+		bookService.deleteBook(id);
+		return ResponseEntity.noContent().build();
+	}
 
-    @GetMapping("/search")
-    public List<BookResponseDTO> searchBooks(@ModelAttribute BookSearchFilterDTO filter) {
-        return bookService.search(filter);
-    }
+	@GetMapping("/search")
+	public List<BookResponseDTO> searchBooks(@ModelAttribute BookSearchFilterDTO filter) {
+		return bookService.search(filter);
+	}
 
-    @GetMapping(path = "/availability/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public Flux<ServerSentEvent<BookAvailabilityDTO>> streamBookAvailability() {
-        log.info("Client connected to book availability stream");
-        return bookService.streamBookAvailabilityUpdates()
-                .map(availabilityDTO -> ServerSentEvent.<BookAvailabilityDTO>builder()
-                        .id(String.valueOf(availabilityDTO.id()))
-                        .event("book-availability-update")
-                        .data(availabilityDTO)
-                        .build())
-                .doOnCancel(() -> log.info("Client disconnected from book availability stream"));
-    }
+	@GetMapping(path = "/availability/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+	public Flux<ServerSentEvent<BookAvailabilityDTO>> streamBookAvailability() {
+		log.info("Client connected to book availability stream");
+		return bookService.streamBookAvailabilityUpdates()
+			.map(availabilityDTO -> ServerSentEvent.<BookAvailabilityDTO>builder()
+				.id(String.valueOf(availabilityDTO.id()))
+				.event("book-availability-update")
+				.data(availabilityDTO)
+				.build())
+			.doOnCancel(() -> log.info("Client disconnected from book availability stream"));
+	}
+
 }

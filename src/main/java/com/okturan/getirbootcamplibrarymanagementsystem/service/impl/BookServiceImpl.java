@@ -27,188 +27,181 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class BookServiceImpl implements BookService {
 
-    private final BookRepository bookRepository;
-    private final BorrowingRepository borrowingRepository;
-    private final BookMapper bookMapper;
-    private final Sinks.Many<BookAvailabilityDTO> availabilitySink =
-            Sinks.many().multicast().onBackpressureBuffer();
+	private final BookRepository bookRepository;
 
-    /* ---------- CRUD ---------- */
+	private final BorrowingRepository borrowingRepository;
 
-    @Override
-    @Transactional
-    public BookResponseDTO createBook(BookRequestDTO dto) {
-        if (bookRepository.existsByIsbn(dto.isbn())) {
-            throw new IllegalArgumentException("Book with ISBN " + dto.isbn() + " already exists");
-        }
-        Book savedBook = bookRepository.save(bookMapper.mapToEntity(dto));
-        log.info("Created book {} ({})", savedBook.getTitle(), savedBook.getId());
-        return bookMapper.mapToDTO(savedBook);
-    }
+	private final BookMapper bookMapper;
 
-    @Override
-    @Transactional(readOnly = true)
-    public BookResponseDTO getBookById(Long id) {
-        Book book = findByIdOrThrow(id);
-        calculateAvailability(book);
-        return bookMapper.mapToDTO(book);
-    }
+	private final Sinks.Many<BookAvailabilityDTO> availabilitySink = Sinks.many().multicast().onBackpressureBuffer();
 
-    @Override
-    @Transactional(readOnly = true)
-    public BookResponseDTO getBookByIsbn(String isbn) {
-        Book book = bookRepository.findByIsbn(isbn)
-                .orElseThrow(() -> new EntityNotFoundException("Book not found: " + isbn));
-        calculateAvailability(book);
-        return bookMapper.mapToDTO(book);
-    }
+	/* ---------- CRUD ---------- */
 
-    @Override
-    @Transactional(readOnly = true)
-    public List<BookResponseDTO> getAllBooks() {
-        List<Book> books = bookRepository.findAll();
-        calculateBatchAvailability(books);
-        return books.stream()
-                .map(bookMapper::mapToDTO)
-                .toList();
-    }
+	@Override
+	@Transactional
+	public BookResponseDTO createBook(BookRequestDTO dto) {
+		if (bookRepository.existsByIsbn(dto.isbn())) {
+			throw new IllegalArgumentException("Book with ISBN " + dto.isbn() + " already exists");
+		}
+		Book savedBook = bookRepository.save(bookMapper.mapToEntity(dto));
+		log.info("Created book {} ({})", savedBook.getTitle(), savedBook.getId());
+		return bookMapper.mapToDTO(savedBook);
+	}
 
-    /**
-     * Calculates if a book is available based on whether it's currently borrowed out
-     *
-     * @param book the book to check
-     */
-    private void calculateAvailability(Book book) {
-        boolean isBorrowed = borrowingRepository.existsByBookAndReturnedFalse(book);
-        book.setAvailable(!isBorrowed);
-    }
+	@Override
+	@Transactional(readOnly = true)
+	public BookResponseDTO getBookById(Long id) {
+		Book book = findByIdOrThrow(id);
+		calculateAvailability(book);
+		return bookMapper.mapToDTO(book);
+	}
 
-    /**
-     * Optimized method to calculate availability for a list of books in a single database query
-     *
-     * @param books the list of books to check
-     */
-    private void calculateBatchAvailability(List<Book> books) {
-        if (books.isEmpty()) {
-            return;
-        }
+	@Override
+	@Transactional(readOnly = true)
+	public BookResponseDTO getBookByIsbn(String isbn) {
+		Book book = bookRepository.findByIsbn(isbn)
+			.orElseThrow(() -> new EntityNotFoundException("Book not found: " + isbn));
+		calculateAvailability(book);
+		return bookMapper.mapToDTO(book);
+	}
 
-        // Extract all book IDs
-        List<Long> bookIds = books.stream()
-                .map(Book::getId)
-                .toList();
+	@Override
+	@Transactional(readOnly = true)
+	public List<BookResponseDTO> getAllBooks() {
+		List<Book> books = bookRepository.findAll();
+		calculateBatchAvailability(books);
+		return books.stream().map(bookMapper::mapToDTO).toList();
+	}
 
-        // Get all book IDs that are currently borrowed in a single query
-        Set<Long> borrowedBookIds = borrowingRepository.findBorrowedBookIdsByBookIds(bookIds);
+	/**
+	 * Calculates if a book is available based on whether it's currently borrowed out
+	 * @param book the book to check
+	 */
+	private void calculateAvailability(Book book) {
+		boolean isBorrowed = borrowingRepository.existsByBookAndReturnedFalse(book);
+		book.setAvailable(!isBorrowed);
+	}
 
-        // Set availability flag for each book
-        books.forEach(book -> book.setAvailable(!borrowedBookIds.contains(book.getId())));
-    }
+	/**
+	 * Optimized method to calculate availability for a list of books in a single database
+	 * query
+	 * @param books the list of books to check
+	 */
+	private void calculateBatchAvailability(List<Book> books) {
+		if (books.isEmpty()) {
+			return;
+		}
 
-    @Override
-    @Transactional(readOnly = true)
-    public List<BookResponseDTO> search(BookSearchFilterDTO f) {
+		// Extract all book IDs
+		List<Long> bookIds = books.stream().map(Book::getId).toList();
 
-        Specification<Book> spec = Specification.where(null);
+		// Get all book IDs that are currently borrowed in a single query
+		Set<Long> borrowedBookIds = borrowingRepository.findBorrowedBookIdsByBookIds(bookIds);
 
-        if (f.author().isPresent()) {
-            spec = spec.and((root, q, cb) ->
-                                    cb.like(cb.lower(root.get("author")), "%" + f.author().get().toLowerCase() + "%"));
-        }
+		// Set availability flag for each book
+		books.forEach(book -> book.setAvailable(!borrowedBookIds.contains(book.getId())));
+	}
 
-        if (f.title().isPresent()) {
-            spec = spec.and((root, q, cb) ->
-                                    cb.like(cb.lower(root.get("title")), "%" + f.title().get().toLowerCase() + "%"));
-        }
+	@Override
+	@Transactional(readOnly = true)
+	public List<BookResponseDTO> search(BookSearchFilterDTO f) {
 
-        if (f.genre().isPresent()) {
-            spec = spec.and((root, q, cb) ->
-                                    cb.equal(root.get("genre"), f.genre().get()));
-        }
+		Specification<Book> spec = Specification.where(null);
 
-        // Get all books matching the criteria
-        List<Book> books = bookRepository.findAll(spec);
+		if (f.author().isPresent()) {
+			spec = spec.and(
+					(root, q, cb) -> cb.like(cb.lower(root.get("author")), "%" + f.author().get().toLowerCase() + "%"));
+		}
 
-        // Fetch and Calculate availability for all books in a single query
-        calculateBatchAvailability(books);
+		if (f.title().isPresent()) {
+			spec = spec
+				.and((root, q, cb) -> cb.like(cb.lower(root.get("title")), "%" + f.title().get().toLowerCase() + "%"));
+		}
 
-        // If availability filter is present, filter the books in memory
-        if (f.available().isPresent()) {
-            boolean availableFilter = f.available().get();
-            books = books.stream()
-                    .filter(book -> book.getAvailable() == availableFilter)
-                    .toList();
-        }
+		if (f.genre().isPresent()) {
+			spec = spec.and((root, q, cb) -> cb.equal(root.get("genre"), f.genre().get()));
+		}
 
-        // Map to DTOs and return
-        return books.stream()
-                .map(bookMapper::mapToDTO)
-                .toList();
-    }
+		// Get all books matching the criteria
+		List<Book> books = bookRepository.findAll(spec);
 
-    @Override
-    @Transactional
-    public BookResponseDTO updateBook(Long id, BookRequestDTO dto) {
-        Book book = findByIdOrThrow(id);
+		// Fetch and Calculate availability for all books in a single query
+		calculateBatchAvailability(books);
 
-        if (!book.getIsbn().equals(dto.isbn()) && bookRepository.existsByIsbn(dto.isbn())) {
-            throw new IllegalArgumentException("Book with ISBN " + dto.isbn() + " already exists");
-        }
+		// If availability filter is present, filter the books in memory
+		if (f.available().isPresent()) {
+			boolean availableFilter = f.available().get();
+			books = books.stream().filter(book -> book.getAvailable() == availableFilter).toList();
+		}
 
-        // Store the current availability status
-        boolean wasAvailable = book.getAvailable();
+		// Map to DTOs and return
+		return books.stream().map(bookMapper::mapToDTO).toList();
+	}
 
-        // Update the book with the DTO data
-        bookMapper.updateEntityFromDto(dto, book);
+	@Override
+	@Transactional
+	public BookResponseDTO updateBook(Long id, BookRequestDTO dto) {
+		Book book = findByIdOrThrow(id);
 
-        // Save the updated book
-        Book updated = bookRepository.save(book);
-        log.info("Updated book {} ({})", updated.getTitle(), updated.getId());
+		if (!book.getIsbn().equals(dto.isbn()) && bookRepository.existsByIsbn(dto.isbn())) {
+			throw new IllegalArgumentException("Book with ISBN " + dto.isbn() + " already exists");
+		}
 
-        // Calculate the current availability based on borrowing status
-        calculateAvailability(updated);
+		// Store the current availability status
+		boolean wasAvailable = book.getAvailable();
 
-        // Check if availability has changed
-        if (wasAvailable != updated.getAvailable()) {
-            emitAvailabilityUpdate(updated);
-        }
+		// Update the book with the DTO data
+		bookMapper.updateEntityFromDto(dto, book);
 
-        return bookMapper.mapToDTO(updated);
-    }
+		// Save the updated book
+		Book updated = bookRepository.save(book);
+		log.info("Updated book {} ({})", updated.getTitle(), updated.getId());
 
-    @Override
-    @Transactional
-    public void deleteBook(Long id) {
-        if (!bookRepository.existsById(id)) {
-            throw new EntityNotFoundException("Book not found with id: " + id);
-        }
-        bookRepository.deleteById(id);
-        log.info("Deleted book {}", id);
-    }
+		// Calculate the current availability based on borrowing status
+		calculateAvailability(updated);
 
-    /* ---------- Streaming ---------- */
+		// Check if availability has changed
+		if (wasAvailable != updated.getAvailable()) {
+			emitAvailabilityUpdate(updated);
+		}
 
-    @Override
-    public Flux<BookAvailabilityDTO> streamBookAvailabilityUpdates() {
-        log.info("Subscribed to book availability updates");
-        return availabilitySink.asFlux()
-                .publishOn(Schedulers.boundedElastic())
-                .doOnCancel(() -> log.info("Unsubscribed from book availability updates"));
-    }
+		return bookMapper.mapToDTO(updated);
+	}
 
-    /* ---------- Internal helpers ---------- */
+	@Override
+	@Transactional
+	public void deleteBook(Long id) {
+		if (!bookRepository.existsById(id)) {
+			throw new EntityNotFoundException("Book not found with id: " + id);
+		}
+		bookRepository.deleteById(id);
+		log.info("Deleted book {}", id);
+	}
 
-    private Book findByIdOrThrow(Long id) {
-        return bookRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Book not found with id: " + id));
-    }
+	/* ---------- Streaming ---------- */
 
-    public void emitAvailabilityUpdate(Book book) {
-        // Calculate availability based on borrowing status
-        calculateAvailability(book);
+	@Override
+	public Flux<BookAvailabilityDTO> streamBookAvailabilityUpdates() {
+		log.info("Subscribed to book availability updates");
+		return availabilitySink.asFlux()
+			.publishOn(Schedulers.boundedElastic())
+			.doOnCancel(() -> log.info("Unsubscribed from book availability updates"));
+	}
 
-        BookAvailabilityDTO dto = bookMapper.createAvailabilityDTO(book);
-        availabilitySink.tryEmitNext(dto);
-        log.info("Availability changed → emitted update for book {}", book.getId());
-    }
+	/* ---------- Internal helpers ---------- */
+
+	private Book findByIdOrThrow(Long id) {
+		return bookRepository.findById(id)
+			.orElseThrow(() -> new EntityNotFoundException("Book not found with id: " + id));
+	}
+
+	public void emitAvailabilityUpdate(Book book) {
+		// Calculate availability based on borrowing status
+		calculateAvailability(book);
+
+		BookAvailabilityDTO dto = bookMapper.createAvailabilityDTO(book);
+		availabilitySink.tryEmitNext(dto);
+		log.info("Availability changed → emitted update for book {}", book.getId());
+	}
+
 }

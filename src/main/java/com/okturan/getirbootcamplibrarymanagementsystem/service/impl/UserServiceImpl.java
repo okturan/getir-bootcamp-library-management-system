@@ -21,65 +21,67 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class UserServiceImpl implements UserService {
 
-    private final UserRepository userRepository;
-    private final UserMapper userMapper;
+	private final UserRepository userRepository;
 
-    private User getById(Long id) {
-        return userRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("User not found with ID: " + id));
-    }
+	private final UserMapper userMapper;
 
-    private User getByUsername(String username) {
-        return userRepository.findByUsername(username)
-                .orElseThrow(() -> new EntityNotFoundException("User not found with username: " + username));
-    }
+	private User getById(Long id) {
+		return userRepository.findById(id)
+			.orElseThrow(() -> new EntityNotFoundException("User not found with ID: " + id));
+	}
 
-    @Override
-    public User registerUser(User user) {
-        log.info("Registering user: username={}", user.getUsername());
+	private User getByUsername(String username) {
+		return userRepository.findByUsername(username)
+			.orElseThrow(() -> new EntityNotFoundException("User not found with username: " + username));
+	}
 
-        // Simply save the user with whatever roles are already set
-        return userRepository.save(user);
-    }
+	@Override
+	public User registerUser(User user) {
+		log.info("Registering user: username={}", user.getUsername());
 
-    @Override
-    @Transactional(readOnly = true)
-    public UserDetailsDTO findByUsername(String username) {
-        User user = getByUsername(username);
-        return userMapper.mapToDetailsDTO(user);
-    }
+		// Simply save the user with whatever roles are already set
+		return userRepository.save(user);
+	}
 
-    @Override
-    @Transactional(readOnly = true)
-    public Page<UserDetailsDTO> getAllUsers(Pageable pageable) {
-        Page<User> usersPage = userRepository.findAll(pageable);
-        return usersPage.map(userMapper::mapToDetailsDTO);
-    }
+	@Override
+	@Transactional(readOnly = true)
+	public UserDetailsDTO findByUsername(String username) {
+		User user = getByUsername(username);
+		return userMapper.mapToDetailsDTO(user);
+	}
 
-    @Override
-    @Transactional(readOnly = true)
-    public UserDetailsDTO findById(Long id) {
-        User user = getById(id);
-        return userMapper.mapToDetailsDTO(user);
-    }
+	@Override
+	@Transactional(readOnly = true)
+	public Page<UserDetailsDTO> getAllUsers(Pageable pageable) {
+		Page<User> usersPage = userRepository.findAll(pageable);
+		return usersPage.map(userMapper::mapToDetailsDTO);
+	}
 
-    @Override
-    public UserDetailsDTO updateUser(Long id, AdminUserUpdateDTO adminUserUpdateDTO) {
-        log.info("Admin updating user: id={}", id);
+	@Override
+	@Transactional(readOnly = true)
+	public UserDetailsDTO findById(Long id) {
+		User user = getById(id);
+		return userMapper.mapToDetailsDTO(user);
+	}
 
-        User existingUser = getById(id);
-        userMapper.updateUserFromAdminDto(adminUserUpdateDTO, existingUser);
+	@Override
+	public UserDetailsDTO updateUser(Long id, AdminUserUpdateDTO adminUserUpdateDTO) {
+		log.info("Admin updating user: id={}", id);
 
-        return userMapper.mapToDetailsDTO(userRepository.save(existingUser));
-    }
+		User existingUser = getById(id);
+		userMapper.updateUserFromAdminDto(adminUserUpdateDTO, existingUser);
 
-    @Override
-    public UserDetailsDTO updateCurrentUser(String username, UserUpdateDTO userUpdateDTO) {
-        log.info("Self-updating user: username={}", username);
+		return userMapper.mapToDetailsDTO(userRepository.save(existingUser));
+	}
 
-        User existingUser = getByUsername(username);
-        userMapper.updateUserFromDto(userUpdateDTO, existingUser);
+	@Override
+	public UserDetailsDTO updateCurrentUser(String username, UserUpdateDTO userUpdateDTO) {
+		log.info("Self-updating user: username={}", username);
 
-        return userMapper.mapToDetailsDTO(userRepository.save(existingUser));
-    }
+		User existingUser = getByUsername(username);
+		userMapper.updateUserFromDto(userUpdateDTO, existingUser);
+
+		return userMapper.mapToDetailsDTO(userRepository.save(existingUser));
+	}
+
 }

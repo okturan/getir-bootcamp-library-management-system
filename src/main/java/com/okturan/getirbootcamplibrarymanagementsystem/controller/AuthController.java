@@ -18,31 +18,31 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class AuthController implements AuthApi {
 
-    private final AuthService authService;
+	private final AuthService authService;
 
-    @Override
-    @PostMapping("/register")
-    public ResponseEntity<JwtResponseDTO> registerPatron(
-            @Valid @RequestBody UserRegistrationDTO registrationDTO) {
-        AuthResultDTO result = authService.registerPatron(registrationDTO);
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(new JwtResponseDTO(result.token(), result.username(), result.roles()));
-    }
+	@Override
+	@PostMapping("/register")
+	public ResponseEntity<JwtResponseDTO> registerPatron(@Valid @RequestBody UserRegistrationDTO registrationDTO) {
+		AuthResultDTO result = authService.registerPatron(registrationDTO);
+		return ResponseEntity.status(HttpStatus.CREATED)
+			.body(new JwtResponseDTO(result.token(), result.username(), result.roles()));
+	}
 
-    @Override
-    @PostMapping("/admin/register")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<JwtResponseDTO> registerWithRole(
-            @Valid @RequestBody AdminUserRegistrationDTO registrationDTO) {
-        AuthResultDTO result = authService.registerWithRole(registrationDTO);
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(new JwtResponseDTO(result.token(), result.username(), result.roles()));
-    }
+	@Override
+	@PostMapping("/admin/register")
+	@PreAuthorize("hasRole('ADMIN')")
+	public ResponseEntity<JwtResponseDTO> registerWithRole(
+			@Valid @RequestBody AdminUserRegistrationDTO registrationDTO) {
+		AuthResultDTO result = authService.registerWithRole(registrationDTO);
+		return ResponseEntity.status(HttpStatus.CREATED)
+			.body(new JwtResponseDTO(result.token(), result.username(), result.roles()));
+	}
 
-    @Override
-    @PostMapping("/login")
-    public ResponseEntity<JwtResponseDTO> login(@Valid @RequestBody LoginDTO loginDTO) {
-        AuthResultDTO result = authService.login(loginDTO);
-        return ResponseEntity.ok(new JwtResponseDTO(result.token(), result.username(), result.roles()));
-    }
+	@Override
+	@PostMapping("/login")
+	public ResponseEntity<JwtResponseDTO> login(@Valid @RequestBody LoginDTO loginDTO) {
+		AuthResultDTO result = authService.login(loginDTO);
+		return ResponseEntity.ok(new JwtResponseDTO(result.token(), result.username(), result.roles()));
+	}
+
 }

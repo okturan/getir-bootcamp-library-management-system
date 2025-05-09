@@ -11,26 +11,26 @@ import java.util.List;
 
 public interface BookService {
 
-    List<BookResponseDTO> search(BookSearchFilterDTO filter);
+	List<BookResponseDTO> search(BookSearchFilterDTO filter);
 
-    BookResponseDTO createBook(BookRequestDTO bookRequestDTO);
+	BookResponseDTO createBook(BookRequestDTO bookRequestDTO);
 
-    BookResponseDTO getBookById(Long id);
+	BookResponseDTO getBookById(Long id);
 
-    BookResponseDTO getBookByIsbn(String isbn);
+	BookResponseDTO getBookByIsbn(String isbn);
 
-    List<BookResponseDTO> getAllBooks();
+	List<BookResponseDTO> getAllBooks();
 
-    BookResponseDTO updateBook(Long id, BookRequestDTO bookRequestDTO);
+	BookResponseDTO updateBook(Long id, BookRequestDTO bookRequestDTO);
 
-    void deleteBook(Long id);
+	void deleteBook(Long id);
 
-    /**
-     * Stream real-time book availability updates
-     *
-     * @return Flux of BookAvailabilityDTO containing availability updates
-     */
-    Flux<BookAvailabilityDTO> streamBookAvailabilityUpdates();
+	/**
+	 * Stream real-time book availability updates
+	 * @return Flux of BookAvailabilityDTO containing availability updates
+	 */
+	Flux<BookAvailabilityDTO> streamBookAvailabilityUpdates();
 
-    void emitAvailabilityUpdate(Book book);
+	void emitAvailabilityUpdate(Book book);
+
 }

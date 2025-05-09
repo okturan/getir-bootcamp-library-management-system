@@ -9,16 +9,16 @@ import org.springframework.data.domain.Pageable;
 
 public interface UserService {
 
-    User registerUser(User user);
+	User registerUser(User user);
 
-    UserDetailsDTO findByUsername(String username);
+	UserDetailsDTO findByUsername(String username);
 
-    UserDetailsDTO updateUser(Long id, AdminUserUpdateDTO adminUserUpdateDTO);
+	UserDetailsDTO updateUser(Long id, AdminUserUpdateDTO adminUserUpdateDTO);
 
-    UserDetailsDTO updateCurrentUser(String username, UserUpdateDTO userUpdateDTO);
+	UserDetailsDTO updateCurrentUser(String username, UserUpdateDTO userUpdateDTO);
 
-    Page<UserDetailsDTO> getAllUsers(Pageable pageable);
+	Page<UserDetailsDTO> getAllUsers(Pageable pageable);
 
-    UserDetailsDTO findById(Long id);
+	UserDetailsDTO findById(Long id);
 
 }

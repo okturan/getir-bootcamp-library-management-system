@@ -14,37 +14,41 @@ import java.util.stream.Collectors;
 @Service
 public class CustomUserDetailsService implements UserDetailsService {
 
-    private final UserRepository userRepository;
+	private final UserRepository userRepository;
 
-    public CustomUserDetailsService(UserRepository userRepository) {
-        this.userRepository = userRepository;
-    }
+	public CustomUserDetailsService(UserRepository userRepository) {
+		this.userRepository = userRepository;
+	}
 
-    @Override
-    @Transactional(readOnly = true)
-    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found with username: " + username));
+	@Override
+	@Transactional(readOnly = true)
+	public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+		User user = userRepository.findByUsername(username)
+			.orElseThrow(() -> new UsernameNotFoundException("User not found with username: " + username));
 
-        return buildUserDetails(user);
-    }
+		return buildUserDetails(user);
+	}
 
-    private UserDetails buildUserDetails(User user) {
-        // Convert our roles to Spring Security SimpleGrantedAuthority objects
-        var authorities = user.getRoles().stream()
-                .map(role -> new SimpleGrantedAuthority(role.getAuthority()))
-                .collect(Collectors.toList());
+	private UserDetails buildUserDetails(User user) {
+		// Convert our roles to Spring Security SimpleGrantedAuthority objects
+		var authorities = user.getRoles()
+			.stream()
+			.map(role -> new SimpleGrantedAuthority(role.getAuthority()))
+			.collect(Collectors.toList());
 
-        // Create and return a UserDetails object
-        // Note: isActive field has been removed from User model, so we're setting enabled to true by default
-        return new org.springframework.security.core.userdetails.User(
-                user.getUsername(),
-                user.getPassword(),
-                true,             // enabled (previously might have used user.isActive())
-                true,             // accountNonExpired
-                true,             // credentialsNonExpired
-                true,             // accountNonLocked
-                authorities
-        );
-    }
+		// Create and return a UserDetails object
+		// Note: isActive field has been removed from User model, so we're setting enabled
+		// to true by default
+		return new org.springframework.security.core.userdetails.User(user.getUsername(), user.getPassword(), true, // enabled
+																													// (previously
+																													// might
+																													// have
+																													// used
+																													// user.isActive())
+				true, // accountNonExpired
+				true, // credentialsNonExpired
+				true, // accountNonLocked
+				authorities);
+	}
+
 }

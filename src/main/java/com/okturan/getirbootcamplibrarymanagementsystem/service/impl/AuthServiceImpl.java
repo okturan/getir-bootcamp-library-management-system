@@ -28,82 +28,91 @@ import java.util.Set;
 @Transactional
 public class AuthServiceImpl implements AuthService {
 
-    private final JwtTokenProvider tokenProvider;
-    private final AuthenticationManager authenticationManager;
-    private final UserService userService;
-    private final UserMapper userMapper;
-    private final PasswordEncoder passwordEncoder;
+	private final JwtTokenProvider tokenProvider;
 
-    /* ─────────  registration  ───────── */
+	private final AuthenticationManager authenticationManager;
 
-    @Override
-    public AuthResultDTO registerPatron(UserRegistrationDTO dto) {
-        log.info("Public registration attempt for username: {}", dto.username());
+	private final UserService userService;
 
-        // For public registration, we always create a PATRON user
-        User user = userMapper.mapToEntity(dto);
-        user.addRole(Role.PATRON);
+	private final UserMapper userMapper;
 
-        return saveAndLogin(user, dto.password());
-    }
+	private final PasswordEncoder passwordEncoder;
 
-    @Override
-    public AuthResultDTO registerWithRole(AdminUserRegistrationDTO dto) {
-        log.info("Admin registration: {} ({})", dto.username(), dto.role());
+	/* ───────── registration ───────── */
 
-        // extra guard – keep it, but move it to a one‑liner
-        if (dto.role() != null && dto.role() != Role.PATRON &&
-                SecurityContextHolder.getContext().getAuthentication()
-                        .getAuthorities().stream()
-                        .noneMatch(a -> a.getAuthority().equals(Role.ADMIN.getAuthority()))) {
-            throw new UnauthorizedRoleCreationException(dto.role());
-        }
+	@Override
+	public AuthResultDTO registerPatron(UserRegistrationDTO dto) {
+		log.info("Public registration attempt for username: {}", dto.username());
 
-        return saveAndLogin(userMapper.mapToEntity(dto), dto.password());
-    }
+		// For public registration, we always create a PATRON user
+		User user = userMapper.mapToEntity(dto);
+		user.addRole(Role.PATRON);
 
-    /* ─────────  login  ───────── */
+		return saveAndLogin(user, dto.password());
+	}
 
-    @Override
-    public AuthResultDTO login(LoginDTO dto) {
-        log.info("Login attempt for username: {}", dto.username());
-        return authenticateUser(dto.username(), dto.password());
-    }
+	@Override
+	public AuthResultDTO registerWithRole(AdminUserRegistrationDTO dto) {
+		log.info("Admin registration: {} ({})", dto.username(), dto.role());
 
-    /* ─────────  core helper  ───────── */
+		// extra guard – keep it, but move it to a one‑liner
+		if (dto.role() != null && dto.role() != Role.PATRON
+				&& SecurityContextHolder.getContext()
+					.getAuthentication()
+					.getAuthorities()
+					.stream()
+					.noneMatch(a -> a.getAuthority().equals(Role.ADMIN.getAuthority()))) {
+			throw new UnauthorizedRoleCreationException(dto.role());
+		}
 
-    private AuthResultDTO saveAndLogin(User user, String rawPassword) {
-        user.setPassword(passwordEncoder.encode(rawPassword));
-        try {
-            User saved = userService.registerUser(user);
-            // Get authentication result without userId
-            AuthResultDTO tempDto = authenticateUser(saved.getUsername(), rawPassword);
-            // Create a new AuthResultDTO with the userId
-            return new AuthResultDTO(tempDto.token(), tempDto.username(), saved.getId(), tempDto.roles());
-        } catch (DataIntegrityViolationException dup) {
-            log.warn("Duplicate username/email – {}", dup.getMostSpecificCause().getMessage());
-            throw dup;
-        }
-    }
+		return saveAndLogin(userMapper.mapToEntity(dto), dto.password());
+	}
 
-    private AuthResultDTO authenticateUser(String username, String password) {
-        try {
-            log.debug("Attempting authentication for {}", username);
-            Authentication auth = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(username, password));
+	/* ───────── login ───────── */
 
-            SecurityContextHolder.getContext().setAuthentication(auth);
-            String jwt = tokenProvider.createToken(auth);
-            UserDetailsDTO userDetails = userService.findByUsername(username);
-            Long userId = userDetails.id();
-            Set<Role> roles = userDetails.roles();
+	@Override
+	public AuthResultDTO login(LoginDTO dto) {
+		log.info("Login attempt for username: {}", dto.username());
+		return authenticateUser(dto.username(), dto.password());
+	}
 
-            log.info("Authentication successful for user ID {}", userId);
-            return new AuthResultDTO(jwt, username, userId, roles);
+	/* ───────── core helper ───────── */
 
-        } catch (AuthenticationException ex) {
-            log.warn("Authentication failed for {}", username);
-            throw ex;      // 401 handled globally
-        }
-    }
+	private AuthResultDTO saveAndLogin(User user, String rawPassword) {
+		user.setPassword(passwordEncoder.encode(rawPassword));
+		try {
+			User saved = userService.registerUser(user);
+			// Get authentication result without userId
+			AuthResultDTO tempDto = authenticateUser(saved.getUsername(), rawPassword);
+			// Create a new AuthResultDTO with the userId
+			return new AuthResultDTO(tempDto.token(), tempDto.username(), saved.getId(), tempDto.roles());
+		}
+		catch (DataIntegrityViolationException dup) {
+			log.warn("Duplicate username/email – {}", dup.getMostSpecificCause().getMessage());
+			throw dup;
+		}
+	}
+
+	private AuthResultDTO authenticateUser(String username, String password) {
+		try {
+			log.debug("Attempting authentication for {}", username);
+			Authentication auth = authenticationManager
+				.authenticate(new UsernamePasswordAuthenticationToken(username, password));
+
+			SecurityContextHolder.getContext().setAuthentication(auth);
+			String jwt = tokenProvider.createToken(auth);
+			UserDetailsDTO userDetails = userService.findByUsername(username);
+			Long userId = userDetails.id();
+			Set<Role> roles = userDetails.roles();
+
+			log.info("Authentication successful for user ID {}", userId);
+			return new AuthResultDTO(jwt, username, userId, roles);
+
+		}
+		catch (AuthenticationException ex) {
+			log.warn("Authentication failed for {}", username);
+			throw ex; // 401 handled globally
+		}
+	}
+
 }
