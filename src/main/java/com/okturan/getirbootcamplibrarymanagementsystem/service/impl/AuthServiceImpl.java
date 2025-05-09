@@ -54,17 +54,6 @@ public class AuthServiceImpl implements AuthService {
 	@Override
 	public AuthResultDTO registerWithRole(AdminUserRegistrationDTO dto) {
 		log.info("Admin registration: {} ({})", dto.username(), dto.role());
-
-		// extra guard – keep it, but move it to a one‑liner
-		if (dto.role() != null && dto.role() != Role.PATRON
-				&& SecurityContextHolder.getContext()
-					.getAuthentication()
-					.getAuthorities()
-					.stream()
-					.noneMatch(a -> a.getAuthority().equals(Role.ADMIN.getAuthority()))) {
-			throw new UnauthorizedRoleCreationException(dto.role());
-		}
-
 		return saveAndLogin(userMapper.mapToEntity(dto), dto.password());
 	}
 

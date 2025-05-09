@@ -69,8 +69,6 @@ public class SecurityConfig {
 				// Admin-only endpoints
 				.requestMatchers("/api/auth/admin/**")
 				.hasAuthority("ROLE_ADMIN") // Admin-only registration
-				.requestMatchers("/api/books/admin/**")
-				.hasAuthority("ROLE_ADMIN")
 
 				// Admin and Librarian endpoints
 				.requestMatchers(HttpMethod.POST, "/api/books/**")

@@ -7,13 +7,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 /**
  * Bootstrap component that ensures at least one admin user exists in the system.
  */
+
 @Component
+@Order(1)
 public class AdminUserInitializer implements CommandLineRunner {
 
 	private static final Logger logger = LoggerFactory.getLogger(AdminUserInitializer.class);
