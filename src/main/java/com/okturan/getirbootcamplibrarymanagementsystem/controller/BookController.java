@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort.Direction;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -51,7 +52,7 @@ public class BookController implements BookApi {
 
 	@GetMapping
 	public ResponseEntity<PageDTO<BookResponseDTO>> getAllBooks(
-			@ParameterObject @PageableDefault(sort = "title,asc", size = 20) Pageable pageable) {
+			@ParameterObject @PageableDefault(page = 0, size = 20, sort = "title", direction = Direction.ASC) Pageable pageable) {
 		Page<BookResponseDTO> booksPage = bookService.getAllBooks(pageable);
 		return ResponseEntity.ok(PageDTO.from(booksPage));
 	}
@@ -59,7 +60,7 @@ public class BookController implements BookApi {
 	@GetMapping("/search")
 	public ResponseEntity<PageDTO<BookResponseDTO>> searchBooks(
 			@ModelAttribute BookSearchFilterDTO filter,
-			@ParameterObject @PageableDefault(sort = "title,asc", size = 20) Pageable pageable) {
+			@ParameterObject @PageableDefault(page = 0, size = 20, sort = "title", direction = Direction.ASC) Pageable pageable) {
 		Page<BookResponseDTO> booksPage = bookService.search(filter, pageable);
 		return ResponseEntity.ok(PageDTO.from(booksPage));
 	}

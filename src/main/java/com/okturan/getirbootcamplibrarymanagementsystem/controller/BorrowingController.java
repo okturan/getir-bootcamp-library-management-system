@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort.Direction;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -52,7 +53,7 @@ public class BorrowingController implements BorrowingApi {
 	@GetMapping("/history")
 	@PreAuthorize("isAuthenticated()")
 	public ResponseEntity<BorrowingHistoryDTO> getCurrentUserBorrowingHistory(
-			@ParameterObject @PageableDefault(sort = "borrowDate,desc", size = 10) Pageable pageable) {
+			@ParameterObject @PageableDefault(page = 0, sort = "borrowDate", direction = Direction.DESC, size = 10) Pageable pageable) {
 		BorrowingHistoryDTO response = borrowingService.getCurrentUserBorrowingHistory(pageable);
 		return ResponseEntity.ok(response);
 	}
@@ -61,7 +62,7 @@ public class BorrowingController implements BorrowingApi {
 	@GetMapping("/users/{userId}/history")
 	@PreAuthorize("hasAnyRole('LIBRARIAN', 'ADMIN')")
 	public ResponseEntity<BorrowingHistoryDTO> getUserBorrowingHistory(
-			@ParameterObject @PageableDefault(sort = "borrowDate,desc", size = 10) Pageable pageable,
+			@ParameterObject @PageableDefault(page = 0, sort = "borrowDate", direction = Direction.DESC, size = 10) Pageable pageable,
 			@PathVariable Long userId) {
 		BorrowingHistoryDTO response = borrowingService.getUserBorrowingHistory(userId, pageable);
 		return ResponseEntity.ok(response);
@@ -70,7 +71,7 @@ public class BorrowingController implements BorrowingApi {
 	@GetMapping("/active")
 	@PreAuthorize("hasAnyRole('LIBRARIAN', 'ADMIN')")
 	public ResponseEntity<PageDTO<BorrowingResponseDTO>> getAllActiveBorrowings(
-			@ParameterObject @PageableDefault(sort = "borrowDate,desc", size = 20) Pageable pageable) {
+			@ParameterObject @PageableDefault(page = 0, sort = "borrowDate", direction = Direction.DESC, size = 20) Pageable pageable) {
 		Page<BorrowingResponseDTO> page = borrowingService.getAllActiveBorrowings(pageable);
 		return ResponseEntity.ok(PageDTO.from(page));
 	}
@@ -79,7 +80,7 @@ public class BorrowingController implements BorrowingApi {
 	@GetMapping("/overdue")
 	@PreAuthorize("hasAnyRole('LIBRARIAN', 'ADMIN')")
 	public ResponseEntity<PageDTO<BorrowingResponseDTO>> getAllOverdueBorrowings(
-			@ParameterObject @PageableDefault(sort = "borrowDate,desc", size = 20) Pageable pageable) {
+			@ParameterObject @PageableDefault(page = 0, sort = "borrowDate", direction = Direction.DESC, size = 20) Pageable pageable) {
 		Page<BorrowingResponseDTO> page = borrowingService.getAllOverdueBorrowings(pageable);
 		return ResponseEntity.ok(PageDTO.from(page));
 	}
