@@ -3,6 +3,8 @@ package com.okturan.getirbootcamplibrarymanagementsystem.service;
 import com.okturan.getirbootcamplibrarymanagementsystem.dto.BorrowingHistoryDTO;
 import com.okturan.getirbootcamplibrarymanagementsystem.dto.BorrowingRequestDTO;
 import com.okturan.getirbootcamplibrarymanagementsystem.dto.BorrowingResponseDTO;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 
@@ -14,13 +16,13 @@ public interface BorrowingService {
 
 	BorrowingResponseDTO getBorrowingById(Long borrowingId);
 
-	BorrowingHistoryDTO getCurrentUserBorrowingHistory();
+	BorrowingHistoryDTO getCurrentUserBorrowingHistory(Pageable pageable);
 
-	BorrowingHistoryDTO getUserBorrowingHistory(Long userId);
+	BorrowingHistoryDTO getUserBorrowingHistory(Long userId, Pageable pageable);
 
-	List<BorrowingResponseDTO> getAllActiveBorrowings();
+	Page<BorrowingResponseDTO> getAllActiveBorrowings(Pageable pageable);
 
-	List<BorrowingResponseDTO> getAllOverdueBorrowings();
+	Page<BorrowingResponseDTO> getAllOverdueBorrowings(Pageable pageable);
 
 	boolean isOwner(Long borrowingId, String username);
 

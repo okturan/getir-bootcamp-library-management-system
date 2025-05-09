@@ -3,6 +3,7 @@ package com.okturan.getirbootcamplibrarymanagementsystem.service.impl;
 import com.okturan.getirbootcamplibrarymanagementsystem.dto.BorrowingHistoryDTO;
 import com.okturan.getirbootcamplibrarymanagementsystem.dto.BorrowingRequestDTO;
 import com.okturan.getirbootcamplibrarymanagementsystem.dto.BorrowingResponseDTO;
+import com.okturan.getirbootcamplibrarymanagementsystem.dto.PageDTO;
 import com.okturan.getirbootcamplibrarymanagementsystem.mapper.BorrowingMapper;
 import com.okturan.getirbootcamplibrarymanagementsystem.model.Book;
 import com.okturan.getirbootcamplibrarymanagementsystem.model.Borrowing;
@@ -16,6 +17,8 @@ import com.okturan.getirbootcamplibrarymanagementsystem.service.BorrowingService
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -104,31 +107,29 @@ public class BorrowingServiceImpl implements BorrowingService {
 
 	@Override
 	@Transactional(readOnly = true)
-	public BorrowingHistoryDTO getCurrentUserBorrowingHistory() {
-		return historyForUser(currentUser());
+	public BorrowingHistoryDTO getCurrentUserBorrowingHistory(Pageable pageable) {
+		return historyForUser(currentUser(), pageable);
 	}
 
 	@Override
 	@Transactional(readOnly = true)
-	public BorrowingHistoryDTO getUserBorrowingHistory(Long userId) {
+	public BorrowingHistoryDTO getUserBorrowingHistory(Long userId, Pageable pageable) {
 		User user = userRepo.findById(userId)
-			.orElseThrow(() -> new EntityNotFoundException("User not found " + userId));
-		return historyForUser(user);
+				.orElseThrow(() -> new EntityNotFoundException("User not found " + userId));
+		return historyForUser(user, pageable);
 	}
 
 	@Override
 	@Transactional(readOnly = true)
-	public List<BorrowingResponseDTO> getAllActiveBorrowings() {
-		return borrowingRepo.findByReturned(false).stream().map(mapper::mapToDTO).toList();
+	public Page<BorrowingResponseDTO> getAllActiveBorrowings(Pageable pageable) {
+		return borrowingRepo.findByReturned(false, pageable).map(mapper::mapToDTO);
 	}
 
 	@Override
 	@Transactional(readOnly = true)
-	public List<BorrowingResponseDTO> getAllOverdueBorrowings() {
-		return borrowingRepo.findByDueDateBeforeAndReturned(LocalDate.now(), false)
-			.stream()
-			.map(mapper::mapToDTO)
-			.toList();
+	public Page<BorrowingResponseDTO> getAllOverdueBorrowings(Pageable pageable) {
+		return borrowingRepo.findByDueDateBeforeAndReturned(LocalDate.now(), false, pageable)
+				.map(mapper::mapToDTO);
 	}
 
 	/* ─────────── helpers ─────────── */
@@ -171,14 +172,22 @@ public class BorrowingServiceImpl implements BorrowingService {
 		return current;
 	}
 
-	private BorrowingHistoryDTO historyForUser(User user) {
-		List<Borrowing> rows = borrowingRepo.findByUser(user);
+	private BorrowingHistoryDTO historyForUser(User user, Pageable pageable) {
+		Page<Borrowing> borrowingsPageEntity = borrowingRepo.findByUser(user, pageable);
+		PageDTO<BorrowingResponseDTO> borrowingsPageDTO = PageDTO.from(borrowingsPageEntity.map(mapper::mapToDTO));
 
-		int current = (int) rows.stream().filter(b -> !b.isReturned()).count();
-		int overdue = (int) rows.stream().filter(b -> !b.isReturned() && b.isOverdue()).count();
+		// Fetch overall stats for the user
+		long totalUserBorrowings = borrowingRepo.countByUser(user);
+		long currentUserBorrowings = borrowingRepo.countByUserAndReturnedFalse(user);
+		long overdueUserBorrowings = borrowingRepo.countByUserAndReturnedFalseAndDueDateBefore(user, LocalDate.now());
 
-		return new BorrowingHistoryDTO(user.getId(), user.getUsername(), rows.stream().map(mapper::mapToDTO).toList(),
-				rows.size(), current, overdue);
+		return new BorrowingHistoryDTO(
+				user.getId(), user.getUsername(),
+				borrowingsPageDTO,
+				(int) totalUserBorrowings,
+				(int) currentUserBorrowings,
+				(int) overdueUserBorrowings
+		);
 	}
 
 	private User currentUser() {

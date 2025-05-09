@@ -3,11 +3,14 @@ package com.okturan.getirbootcamplibrarymanagementsystem.controller.api;
 import com.okturan.getirbootcamplibrarymanagementsystem.dto.BorrowingHistoryDTO;
 import com.okturan.getirbootcamplibrarymanagementsystem.dto.BorrowingRequestDTO;
 import com.okturan.getirbootcamplibrarymanagementsystem.dto.BorrowingResponseDTO;
+import com.okturan.getirbootcamplibrarymanagementsystem.dto.PageDTO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springdoc.core.annotations.ParameterObject;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 
 import java.util.List;
@@ -46,7 +49,7 @@ public interface BorrowingApi {
 	@ApiResponse(responseCode = "200", description = "Borrowing history retrieved",
 			content = @Content(mediaType = "application/json",
 					schema = @Schema(implementation = BorrowingHistoryDTO.class)))
-	ResponseEntity<BorrowingHistoryDTO> getCurrentUserBorrowingHistory();
+	ResponseEntity<BorrowingHistoryDTO> getCurrentUserBorrowingHistory(Pageable pageable);
 
 	@Operation(summary = "Get user's borrowing history",
 			description = "Get borrowing history for a specific user (librarians and admins only)")
@@ -55,18 +58,18 @@ public interface BorrowingApi {
 					schema = @Schema(implementation = BorrowingHistoryDTO.class)))
 	@ApiResponse(responseCode = "404", description = "User not found")
 	@ApiResponse(responseCode = "403", description = "Not authorized to view this user's borrowing history")
-	ResponseEntity<BorrowingHistoryDTO> getUserBorrowingHistory(Long userId);
+	ResponseEntity<BorrowingHistoryDTO> getUserBorrowingHistory(Pageable pageable, Long userId);
 
 	@Operation(summary = "Get all active borrowings",
 			description = "Get all active borrowings (librarians and admins only)")
 	@ApiResponse(responseCode = "200", description = "Active borrowings retrieved")
 	@ApiResponse(responseCode = "403", description = "Not authorized to view active borrowings")
-	ResponseEntity<List<BorrowingResponseDTO>> getAllActiveBorrowings();
+	ResponseEntity<PageDTO<BorrowingResponseDTO>> getAllActiveBorrowings(Pageable pageable);
 
 	@Operation(summary = "Get all overdue borrowings",
 			description = "Get all overdue borrowings (librarians and admins only)")
 	@ApiResponse(responseCode = "200", description = "Overdue borrowings retrieved")
 	@ApiResponse(responseCode = "403", description = "Not authorized to view overdue borrowings")
-	ResponseEntity<List<BorrowingResponseDTO>> getAllOverdueBorrowings();
+	ResponseEntity<PageDTO<BorrowingResponseDTO>> getAllOverdueBorrowings(Pageable pageable);
 
 }

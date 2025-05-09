@@ -1,14 +1,13 @@
 package com.okturan.getirbootcamplibrarymanagementsystem.controller.api;
 
-import com.okturan.getirbootcamplibrarymanagementsystem.dto.BookAvailabilityDTO;
-import com.okturan.getirbootcamplibrarymanagementsystem.dto.BookRequestDTO;
-import com.okturan.getirbootcamplibrarymanagementsystem.dto.BookResponseDTO;
-import com.okturan.getirbootcamplibrarymanagementsystem.dto.BookSearchFilterDTO;
+import com.okturan.getirbootcamplibrarymanagementsystem.dto.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springdoc.core.annotations.ParameterObject;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.codec.ServerSentEvent;
@@ -45,7 +44,10 @@ public interface BookApi {
 	@ApiResponse(responseCode = "200", description = "List of books retrieved successfully",
 			content = @Content(mediaType = "application/json",
 					schema = @Schema(implementation = BookResponseDTO.class)))
-	ResponseEntity<List<BookResponseDTO>> getAllBooks();
+	ResponseEntity<PageDTO<BookResponseDTO>> getAllBooks(@ParameterObject Pageable pageable);
+
+	@Operation(summary = "Search books by any combination of filters")
+	ResponseEntity<PageDTO<BookResponseDTO>> searchBooks(BookSearchFilterDTO filter, @ParameterObject Pageable pageable);
 
 	@Operation(summary = "Update a book", description = "Updates an existing book by its ID")
 	@ApiResponse(responseCode = "200", description = "Book updated successfully",
@@ -60,9 +62,6 @@ public interface BookApi {
 	@ApiResponse(responseCode = "204", description = "Book deleted successfully")
 	@ApiResponse(responseCode = "404", description = "Book not found")
 	ResponseEntity<Void> deleteBook(Long id);
-
-	@Operation(summary = "Search books by any combination of filters")
-	List<BookResponseDTO> searchBooks(BookSearchFilterDTO filter);
 
 	@Operation(summary = "Stream real-time book availability updates",
 			description = "Returns a stream of Server-Sent Events with real-time book availability updates")

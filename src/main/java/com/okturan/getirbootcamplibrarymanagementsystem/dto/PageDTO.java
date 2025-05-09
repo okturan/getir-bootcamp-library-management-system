@@ -8,7 +8,13 @@ public record PageDTO<T>(List<T> content, long totalElements, int totalPages, in
 		boolean last, boolean empty) {
 
 	public static <T> PageDTO<T> from(Page<T> page) {
-		return new PageDTO<>(page.getContent(), page.getTotalElements(), page.getTotalPages(), page.getNumber(),
-				page.getSize(), page.isFirst(), page.isLast(), page.isEmpty());
+		return new PageDTO<>(page.getContent(),
+		                     page.getTotalElements(),
+		                     page.getTotalPages(),
+		                     page.getNumber(),
+		                     page.getSize(),
+		                     page.isFirst(),
+		                     page.isLast(),
+		                     page.isEmpty());
 	}
 }

@@ -6,12 +6,15 @@ import com.okturan.getirbootcamplibrarymanagementsystem.dto.BookResponseDTO;
 import com.okturan.getirbootcamplibrarymanagementsystem.dto.BookSearchFilterDTO;
 import com.okturan.getirbootcamplibrarymanagementsystem.mapper.BookMapper;
 import com.okturan.getirbootcamplibrarymanagementsystem.model.Book;
+import com.okturan.getirbootcamplibrarymanagementsystem.model.Borrowing;
 import com.okturan.getirbootcamplibrarymanagementsystem.repository.BookRepository;
 import com.okturan.getirbootcamplibrarymanagementsystem.repository.BorrowingRepository;
 import com.okturan.getirbootcamplibrarymanagementsystem.service.BookService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -67,10 +70,10 @@ public class BookServiceImpl implements BookService {
 
 	@Override
 	@Transactional(readOnly = true)
-	public List<BookResponseDTO> getAllBooks() {
-		List<Book> books = bookRepository.findAll();
-		calculateBatchAvailability(books);
-		return books.stream().map(bookMapper::mapToDTO).toList();
+	public Page<BookResponseDTO> getAllBooks(Pageable pageable) {
+		Page<Book> booksPage = bookRepository.findAll(pageable);
+		calculateBatchAvailability(booksPage.getContent()); // Essential for DTO mapping
+		return booksPage.map(bookMapper::mapToDTO);
 	}
 
 	/**
@@ -104,38 +107,43 @@ public class BookServiceImpl implements BookService {
 
 	@Override
 	@Transactional(readOnly = true)
-	public List<BookResponseDTO> search(BookSearchFilterDTO f) {
+	public Page<BookResponseDTO> search(BookSearchFilterDTO filter, Pageable pageable) {
+		Specification<Book> spec = createBookSpecification(filter); // New helper method
+		Page<Book> booksPage = bookRepository.findAll(spec, pageable);
+		calculateBatchAvailability(booksPage.getContent()); // Set transient field for DTO mapping
+		return booksPage.map(bookMapper::mapToDTO);
+	}
 
-		Specification<Book> spec = Specification.where(null);
+	private Specification<Book> createBookSpecification(BookSearchFilterDTO f) {
+		return (root, query, cb) -> {
+			java.util.List<jakarta.persistence.criteria.Predicate> predicates = new java.util.ArrayList<>();
+			if (f.author().isPresent() && !f.author().get().isBlank()) {
+				predicates.add(cb.like(cb.lower(root.get("author")), "%" + f.author().get().toLowerCase() + "%"));
+			}
+			if (f.title().isPresent() && !f.title().get().isBlank()) {
+				predicates.add(cb.like(cb.lower(root.get("title")), "%" + f.title().get().toLowerCase() + "%"));
+			}
+			if (f.genre().isPresent() && !f.genre().get().isBlank()) {
+				predicates.add(cb.equal(cb.lower(root.get("genre")), f.genre().get().toLowerCase()));
+			}
 
-		if (f.author().isPresent()) {
-			spec = spec.and(
-					(root, q, cb) -> cb.like(cb.lower(root.get("author")), "%" + f.author().get().toLowerCase() + "%"));
-		}
+			if (f.available().isPresent()) {
+				jakarta.persistence.criteria.Subquery<Long> subquery = query.subquery(Long.class);
+				jakarta.persistence.criteria.Root<Borrowing> borrowingRoot = subquery.from(Borrowing.class);
+				subquery.select(borrowingRoot.get("book").get("id"));
+				subquery.where(
+						cb.equal(borrowingRoot.get("book").get("id"), root.get("id")),
+						cb.isFalse(borrowingRoot.get("returned"))
+				);
 
-		if (f.title().isPresent()) {
-			spec = spec
-				.and((root, q, cb) -> cb.like(cb.lower(root.get("title")), "%" + f.title().get().toLowerCase() + "%"));
-		}
-
-		if (f.genre().isPresent()) {
-			spec = spec.and((root, q, cb) -> cb.equal(root.get("genre"), f.genre().get()));
-		}
-
-		// Get all books matching the criteria
-		List<Book> books = bookRepository.findAll(spec);
-
-		// Fetch and Calculate availability for all books in a single query
-		calculateBatchAvailability(books);
-
-		// If availability filter is present, filter the books in memory
-		if (f.available().isPresent()) {
-			boolean availableFilter = f.available().get();
-			books = books.stream().filter(book -> book.getAvailable() == availableFilter).toList();
-		}
-
-		// Map to DTOs and return
-		return books.stream().map(bookMapper::mapToDTO).toList();
+				if (f.available().get()) { // We want available books (book ID NOT IN subquery)
+					predicates.add(cb.not(cb.exists(subquery)));
+				} else { // We want unavailable books (book ID IN subquery)
+					predicates.add(cb.exists(subquery));
+				}
+			}
+			return cb.and(predicates.toArray(new jakarta.persistence.criteria.Predicate[0]));
+		};
 	}
 
 	@Override
@@ -143,25 +151,20 @@ public class BookServiceImpl implements BookService {
 	public BookResponseDTO updateBook(Long id, BookRequestDTO dto) {
 		Book book = findByIdOrThrow(id);
 
+		calculateAvailability(book); // Ensure book.getAvailable() is populated
+		Boolean wasAvailable = book.getAvailable(); // Now it's correctly true/false
+
 		if (!book.getIsbn().equals(dto.isbn()) && bookRepository.existsByIsbn(dto.isbn())) {
 			throw new IllegalArgumentException("Book with ISBN " + dto.isbn() + " already exists");
 		}
 
-		// Store the current availability status
-		boolean wasAvailable = book.getAvailable();
-
-		// Update the book with the DTO data
 		bookMapper.updateEntityFromDto(dto, book);
-
-		// Save the updated book
 		Book updated = bookRepository.save(book);
 		log.info("Updated book {} ({})", updated.getTitle(), updated.getId());
 
-		// Calculate the current availability based on borrowing status
-		calculateAvailability(updated);
+		calculateAvailability(updated); // Recalculate for the DTO and for comparison
 
-		// Check if availability has changed
-		if (wasAvailable != updated.getAvailable()) {
+		if (!wasAvailable.equals(updated.getAvailable())) { // Use .equals for Boolean comparison
 			emitAvailabilityUpdate(updated);
 		}
 

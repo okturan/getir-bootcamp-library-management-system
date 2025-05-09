@@ -38,8 +38,6 @@ public class UserServiceImpl implements UserService {
 	@Override
 	public User registerUser(User user) {
 		log.info("Registering user: username={}", user.getUsername());
-
-		// Simply save the user with whatever roles are already set
 		return userRepository.save(user);
 	}
 

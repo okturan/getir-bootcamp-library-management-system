@@ -21,12 +21,10 @@ public class Borrowing {
 
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "book_id", nullable = false)
-	@ToString.Exclude
 	private Book book;
 
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "user_id", nullable = false)
-	@ToString.Exclude
 	private User user;
 
 	@Column(name = "borrow_date", nullable = false)

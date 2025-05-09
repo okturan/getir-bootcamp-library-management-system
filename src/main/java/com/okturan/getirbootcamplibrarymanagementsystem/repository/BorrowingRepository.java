@@ -3,6 +3,8 @@ package com.okturan.getirbootcamplibrarymanagementsystem.repository;
 import com.okturan.getirbootcamplibrarymanagementsystem.model.Book;
 import com.okturan.getirbootcamplibrarymanagementsystem.model.Borrowing;
 import com.okturan.getirbootcamplibrarymanagementsystem.model.User;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -15,13 +17,19 @@ import java.util.Set;
 @Repository
 public interface BorrowingRepository extends JpaRepository<Borrowing, Long> {
 
-	List<Borrowing> findByUser(User user);
+	Page<Borrowing> findByUser(User user, Pageable pageable);
 
-	List<Borrowing> findByReturned(boolean returned);
+	Page<Borrowing> findByReturned(boolean returned, Pageable pageable);
 
-	List<Borrowing> findByDueDateBeforeAndReturned(LocalDate currentDate, boolean returned);
+	Page<Borrowing> findByDueDateBeforeAndReturned(LocalDate currentDate, boolean returned, Pageable pageable);
 
 	boolean existsByBookAndReturnedFalse(Book book);
+
+	long countByUser(User user);
+
+	long countByUserAndReturnedFalse(User user);
+
+	long countByUserAndReturnedFalseAndDueDateBefore(User user, LocalDate date);
 
 	/**
 	 * Find all book IDs that are currently borrowed (not returned)

@@ -1,14 +1,15 @@
 package com.okturan.getirbootcamplibrarymanagementsystem.controller;
 
 import com.okturan.getirbootcamplibrarymanagementsystem.controller.api.BookApi;
-import com.okturan.getirbootcamplibrarymanagementsystem.dto.BookAvailabilityDTO;
-import com.okturan.getirbootcamplibrarymanagementsystem.dto.BookRequestDTO;
-import com.okturan.getirbootcamplibrarymanagementsystem.dto.BookResponseDTO;
-import com.okturan.getirbootcamplibrarymanagementsystem.dto.BookSearchFilterDTO;
+import com.okturan.getirbootcamplibrarymanagementsystem.dto.*;
 import com.okturan.getirbootcamplibrarymanagementsystem.service.BookService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springdoc.core.annotations.ParameterObject;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -49,9 +50,18 @@ public class BookController implements BookApi {
 	}
 
 	@GetMapping
-	public ResponseEntity<List<BookResponseDTO>> getAllBooks() {
-		List<BookResponseDTO> books = bookService.getAllBooks();
-		return ResponseEntity.ok(books);
+	public ResponseEntity<PageDTO<BookResponseDTO>> getAllBooks(
+			@ParameterObject @PageableDefault(sort = "title,asc", size = 20) Pageable pageable) {
+		Page<BookResponseDTO> booksPage = bookService.getAllBooks(pageable);
+		return ResponseEntity.ok(PageDTO.from(booksPage));
+	}
+
+	@GetMapping("/search")
+	public ResponseEntity<PageDTO<BookResponseDTO>> searchBooks(
+			@ModelAttribute BookSearchFilterDTO filter,
+			@ParameterObject @PageableDefault(sort = "title,asc", size = 20) Pageable pageable) {
+		Page<BookResponseDTO> booksPage = bookService.search(filter, pageable);
+		return ResponseEntity.ok(PageDTO.from(booksPage));
 	}
 
 	@PutMapping("/{id}")
@@ -69,10 +79,6 @@ public class BookController implements BookApi {
 		return ResponseEntity.noContent().build();
 	}
 
-	@GetMapping("/search")
-	public List<BookResponseDTO> searchBooks(@ModelAttribute BookSearchFilterDTO filter) {
-		return bookService.search(filter);
-	}
 
 	@GetMapping(path = "/availability/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
 	public Flux<ServerSentEvent<BookAvailabilityDTO>> streamBookAvailability() {
