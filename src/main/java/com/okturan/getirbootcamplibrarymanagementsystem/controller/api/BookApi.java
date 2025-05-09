@@ -44,10 +44,10 @@ public interface BookApi {
 	@ApiResponse(responseCode = "200", description = "List of books retrieved successfully",
 			content = @Content(mediaType = "application/json",
 					schema = @Schema(implementation = BookResponseDTO.class)))
-	ResponseEntity<PageDTO<BookResponseDTO>> getAllBooks(@ParameterObject Pageable pageable);
+	ResponseEntity<PageDTO<BookResponseDTO>> getAllBooks(Pageable pageable);
 
 	@Operation(summary = "Search books by any combination of filters")
-	ResponseEntity<PageDTO<BookResponseDTO>> searchBooks(BookSearchFilterDTO filter, @ParameterObject Pageable pageable);
+	ResponseEntity<PageDTO<BookResponseDTO>> searchBooks(BookSearchFilterDTO filter, Pageable pageable);
 
 	@Operation(summary = "Update a book", description = "Updates an existing book by its ID")
 	@ApiResponse(responseCode = "200", description = "Book updated successfully",

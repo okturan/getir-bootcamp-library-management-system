@@ -66,7 +66,8 @@ public class BookController implements BookApi {
 
 	@PutMapping("/{id}")
 	@PreAuthorize("hasAnyRole('ADMIN', 'LIBRARIAN')")
-	public ResponseEntity<BookResponseDTO> updateBook(@PathVariable Long id,
+	public ResponseEntity<BookResponseDTO> updateBook(
+			@PathVariable Long id,
 			@Valid @RequestBody BookRequestDTO bookRequestDTO) {
 		BookResponseDTO updatedBook = bookService.updateBook(id, bookRequestDTO);
 		return ResponseEntity.ok(updatedBook);
@@ -78,7 +79,6 @@ public class BookController implements BookApi {
 		bookService.deleteBook(id);
 		return ResponseEntity.noContent().build();
 	}
-
 
 	@GetMapping(path = "/availability/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
 	public Flux<ServerSentEvent<BookAvailabilityDTO>> streamBookAvailability() {
