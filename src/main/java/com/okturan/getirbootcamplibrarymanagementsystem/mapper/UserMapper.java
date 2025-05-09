@@ -1,19 +1,9 @@
 package com.okturan.getirbootcamplibrarymanagementsystem.mapper;
 
-import com.okturan.getirbootcamplibrarymanagementsystem.dto.AdminUserRegistrationDTO;
-import com.okturan.getirbootcamplibrarymanagementsystem.dto.AdminUserUpdateDTO;
-import com.okturan.getirbootcamplibrarymanagementsystem.dto.UserDetailsDTO;
-import com.okturan.getirbootcamplibrarymanagementsystem.dto.UserRegistrationDTO;
-import com.okturan.getirbootcamplibrarymanagementsystem.dto.UserUpdateDTO;
+import com.okturan.getirbootcamplibrarymanagementsystem.dto.*;
 import com.okturan.getirbootcamplibrarymanagementsystem.model.Role;
 import com.okturan.getirbootcamplibrarymanagementsystem.model.User;
-
-import org.mapstruct.AfterMapping;
-import org.mapstruct.BeanMapping;
-import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
-import org.mapstruct.MappingTarget;
-import org.mapstruct.NullValuePropertyMappingStrategy;
+import org.mapstruct.*;
 
 /**
  * Mapper interface for converting between User entity and DTOs

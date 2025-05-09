@@ -5,7 +5,6 @@ import com.okturan.getirbootcamplibrarymanagementsystem.dto.BorrowingResponseDTO
 import com.okturan.getirbootcamplibrarymanagementsystem.model.Book;
 import com.okturan.getirbootcamplibrarymanagementsystem.model.Borrowing;
 import com.okturan.getirbootcamplibrarymanagementsystem.model.User;
-
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.Named;

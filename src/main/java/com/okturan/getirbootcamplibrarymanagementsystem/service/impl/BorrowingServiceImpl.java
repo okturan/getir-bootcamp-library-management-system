@@ -13,7 +13,9 @@ import com.okturan.getirbootcamplibrarymanagementsystem.repository.BorrowingRepo
 import com.okturan.getirbootcamplibrarymanagementsystem.repository.UserRepository;
 import com.okturan.getirbootcamplibrarymanagementsystem.service.BookService;
 import com.okturan.getirbootcamplibrarymanagementsystem.service.BorrowingService;
-
+import jakarta.persistence.EntityNotFoundException;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -22,10 +24,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
-
-import jakarta.persistence.EntityNotFoundException;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Service("borrowingService")
@@ -40,6 +38,10 @@ public class BorrowingServiceImpl implements BorrowingService {
 
     /* ─────────── borrow / return ─────────── */
 
+    private static boolean hasAdminOrLibrarian(User user) {
+        return user.hasRole(Role.ADMIN) || user.hasRole(Role.LIBRARIAN);
+    }
+
     @Override
     @Transactional
     public BorrowingResponseDTO borrowBook(BorrowingRequestDTO req) {
@@ -47,7 +49,7 @@ public class BorrowingServiceImpl implements BorrowingService {
 
         User borrower = resolveBorrower(req.userId());
         Book book = bookRepo.findById(req.bookId())
-                            .orElseThrow(() -> new EntityNotFoundException("Book not found " + req.bookId()));
+                .orElseThrow(() -> new EntityNotFoundException("Book not found " + req.bookId()));
 
         // Check if the book is already borrowed
         if (borrowingRepo.existsByBookAndReturnedFalse(book)) {
@@ -65,6 +67,8 @@ public class BorrowingServiceImpl implements BorrowingService {
         return mapper.mapToDTO(borrowing);
     }
 
+    /* ─────────── look‑ups ─────────── */
+
     @Override
     @Transactional
     public BorrowingResponseDTO returnBook(Long borrowingId) {
@@ -73,7 +77,9 @@ public class BorrowingServiceImpl implements BorrowingService {
         Borrowing borrowing = borrowingRepo.findById(borrowingId)
                 .orElseThrow(() -> new EntityNotFoundException("Borrowing not found " + borrowingId));
 
-        if (borrowing.isReturned()) throw new IllegalStateException("Book already returned");
+        if (borrowing.isReturned()) {
+            throw new IllegalStateException("Book already returned");
+        }
 
         mapper.returnBook(borrowing);
         borrowingRepo.save(borrowing);
@@ -84,8 +90,6 @@ public class BorrowingServiceImpl implements BorrowingService {
 
         return mapper.mapToDTO(borrowing);
     }
-
-    /* ─────────── look‑ups ─────────── */
 
     @Override
     @Transactional(readOnly = true)
@@ -127,6 +131,8 @@ public class BorrowingServiceImpl implements BorrowingService {
                 .toList();
     }
 
+    /* ─────────── helpers ─────────── */
+
     @Override
     @Transactional(readOnly = true)
     public boolean isOwner(Long borrowingId, String username) {
@@ -137,29 +143,30 @@ public class BorrowingServiceImpl implements BorrowingService {
                 .equals(username);
     }
 
-    /* ─────────── helpers ─────────── */
-
     private User resolveBorrower(Long targetUserId) {
         User current = currentUser();
 
         // When an explicit userId is supplied
         if (targetUserId != null) {
-            if (!hasAdminOrLibrarian(current))
+            if (!hasAdminOrLibrarian(current)) {
                 throw new AccessDeniedException("Only admins or librarians can borrow for other users");
+            }
 
             User target = userRepo.findById(targetUserId)
                     .orElseThrow(() -> new EntityNotFoundException("User not found " + targetUserId));
 
-            if (hasAdminOrLibrarian(target))
+            if (hasAdminOrLibrarian(target)) {
                 throw new IllegalArgumentException("Cannot borrow books for admins or librarians");
+            }
 
             log.info("{} borrows for {}", current.getUsername(), target.getUsername());
             return target;
         }
 
         // Self‑borrow
-        if (hasAdminOrLibrarian(current))
+        if (hasAdminOrLibrarian(current)) {
             throw new AccessDeniedException("Admins/Librarians must specify a patron userId");
+        }
 
         return current;
     }
@@ -183,9 +190,5 @@ public class BorrowingServiceImpl implements BorrowingService {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         return userRepo.findByUsername(auth.getName())
                 .orElseThrow(() -> new EntityNotFoundException("User not found " + auth.getName()));
-    }
-
-    private static boolean hasAdminOrLibrarian(User user) {
-        return user.hasRole(Role.ADMIN) || user.hasRole(Role.LIBRARIAN);
     }
 }

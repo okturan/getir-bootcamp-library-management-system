@@ -35,7 +35,6 @@ public class BookServiceImpl implements BookService {
 
     /* ---------- CRUD ---------- */
 
-
     @Override
     @Transactional
     public BookResponseDTO createBook(BookRequestDTO dto) {
@@ -76,6 +75,7 @@ public class BookServiceImpl implements BookService {
 
     /**
      * Calculates if a book is available based on whether it's currently borrowed out
+     *
      * @param book the book to check
      */
     private void calculateAvailability(Book book) {
@@ -85,6 +85,7 @@ public class BookServiceImpl implements BookService {
 
     /**
      * Optimized method to calculate availability for a list of books in a single database query
+     *
      * @param books the list of books to check
      */
     private void calculateBatchAvailability(List<Book> books) {
@@ -110,17 +111,20 @@ public class BookServiceImpl implements BookService {
 
         Specification<Book> spec = Specification.where(null);
 
-        if (f.author().isPresent())
+        if (f.author().isPresent()) {
             spec = spec.and((root, q, cb) ->
                                     cb.like(cb.lower(root.get("author")), "%" + f.author().get().toLowerCase() + "%"));
+        }
 
-        if (f.title().isPresent())
+        if (f.title().isPresent()) {
             spec = spec.and((root, q, cb) ->
                                     cb.like(cb.lower(root.get("title")), "%" + f.title().get().toLowerCase() + "%"));
+        }
 
-        if (f.genre().isPresent())
+        if (f.genre().isPresent()) {
             spec = spec.and((root, q, cb) ->
                                     cb.equal(root.get("genre"), f.genre().get()));
+        }
 
         // Get all books matching the criteria
         List<Book> books = bookRepository.findAll(spec);

@@ -1,10 +1,6 @@
 package com.okturan.getirbootcamplibrarymanagementsystem.service.impl;
 
-import com.okturan.getirbootcamplibrarymanagementsystem.dto.AdminUserRegistrationDTO;
-import com.okturan.getirbootcamplibrarymanagementsystem.dto.AuthResultDTO;
-import com.okturan.getirbootcamplibrarymanagementsystem.dto.LoginDTO;
-import com.okturan.getirbootcamplibrarymanagementsystem.dto.UserDetailsDTO;
-import com.okturan.getirbootcamplibrarymanagementsystem.dto.UserRegistrationDTO;
+import com.okturan.getirbootcamplibrarymanagementsystem.dto.*;
 import com.okturan.getirbootcamplibrarymanagementsystem.exception.UnauthorizedRoleCreationException;
 import com.okturan.getirbootcamplibrarymanagementsystem.mapper.UserMapper;
 import com.okturan.getirbootcamplibrarymanagementsystem.model.Role;
@@ -12,7 +8,8 @@ import com.okturan.getirbootcamplibrarymanagementsystem.model.User;
 import com.okturan.getirbootcamplibrarymanagementsystem.security.JwtTokenProvider;
 import com.okturan.getirbootcamplibrarymanagementsystem.service.AuthService;
 import com.okturan.getirbootcamplibrarymanagementsystem.service.UserService;
-
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -24,9 +21,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Set;
-
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
@@ -59,9 +53,9 @@ public class AuthServiceImpl implements AuthService {
 
         // extra guard – keep it, but move it to a one‑liner
         if (dto.role() != null && dto.role() != Role.PATRON &&
-            SecurityContextHolder.getContext().getAuthentication()
-                             .getAuthorities().stream()
-                             .noneMatch(a -> a.getAuthority().equals(Role.ADMIN.getAuthority()))) {
+                SecurityContextHolder.getContext().getAuthentication()
+                        .getAuthorities().stream()
+                        .noneMatch(a -> a.getAuthority().equals(Role.ADMIN.getAuthority()))) {
             throw new UnauthorizedRoleCreationException(dto.role());
         }
 

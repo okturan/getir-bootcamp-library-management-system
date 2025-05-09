@@ -1,11 +1,7 @@
 package com.okturan.getirbootcamplibrarymanagementsystem.config;
 
-import com.okturan.getirbootcamplibrarymanagementsystem.security.CustomAccessDeniedHandler;
-import com.okturan.getirbootcamplibrarymanagementsystem.security.CustomAuthenticationEntryPoint;
-import com.okturan.getirbootcamplibrarymanagementsystem.security.CustomUserDetailsService;
-import com.okturan.getirbootcamplibrarymanagementsystem.security.JwtFilter;
-import com.okturan.getirbootcamplibrarymanagementsystem.security.JwtTokenProvider;
-
+import com.okturan.getirbootcamplibrarymanagementsystem.security.*;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -20,13 +16,18 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
-import lombok.RequiredArgsConstructor;
-
 @Configuration
 @EnableMethodSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
 
+    // Define public endpoints in a single array to reduce maintenance overhead
+    private static final String[] PUBLIC = {
+            "/h2-console/**",
+            "/swagger-ui.html", "/swagger-ui/**", "/swagger-ui/index.html", "/webjars/**",
+            "/v3/api-docs/**", "/v3/api-docs.yaml",
+            "/api/auth/register", "/api/auth/login"
+    };
     private final JwtTokenProvider jwtTokenProvider;
     private final CustomUserDetailsService userDetailsService;
     private final CustomAuthenticationEntryPoint authenticationEntryPoint;
@@ -54,14 +55,6 @@ public class SecurityConfig {
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authConfig) throws Exception {
         return authConfig.getAuthenticationManager();
     }
-
-    // Define public endpoints in a single array to reduce maintenance overhead
-    private static final String[] PUBLIC = {
-        "/h2-console/**",
-        "/swagger-ui.html", "/swagger-ui/**", "/swagger-ui/index.html", "/webjars/**",
-        "/v3/api-docs/**", "/v3/api-docs.yaml",
-        "/api/auth/register", "/api/auth/login"
-    };
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {

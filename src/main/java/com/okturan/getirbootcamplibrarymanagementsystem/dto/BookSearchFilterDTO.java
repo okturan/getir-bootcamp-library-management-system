@@ -7,4 +7,5 @@ public record BookSearchFilterDTO(
         Optional<String> title,
         Optional<String> genre,
         Optional<Boolean> available
-) {}
+) {
+}

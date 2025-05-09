@@ -5,10 +5,9 @@ import com.okturan.getirbootcamplibrarymanagementsystem.dto.BookRequestDTO;
 import com.okturan.getirbootcamplibrarymanagementsystem.dto.BookResponseDTO;
 import com.okturan.getirbootcamplibrarymanagementsystem.dto.BookSearchFilterDTO;
 import com.okturan.getirbootcamplibrarymanagementsystem.model.Book;
+import reactor.core.publisher.Flux;
 
 import java.util.List;
-
-import reactor.core.publisher.Flux;
 
 public interface BookService {
 
@@ -28,6 +27,7 @@ public interface BookService {
 
     /**
      * Stream real-time book availability updates
+     *
      * @return Flux of BookAvailabilityDTO containing availability updates
      */
     Flux<BookAvailabilityDTO> streamBookAvailabilityUpdates();

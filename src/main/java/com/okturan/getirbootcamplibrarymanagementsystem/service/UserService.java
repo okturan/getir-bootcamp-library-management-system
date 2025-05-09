@@ -4,7 +4,6 @@ import com.okturan.getirbootcamplibrarymanagementsystem.dto.AdminUserUpdateDTO;
 import com.okturan.getirbootcamplibrarymanagementsystem.dto.UserDetailsDTO;
 import com.okturan.getirbootcamplibrarymanagementsystem.dto.UserUpdateDTO;
 import com.okturan.getirbootcamplibrarymanagementsystem.model.User;
-
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -18,7 +17,7 @@ public interface UserService {
 
     UserDetailsDTO updateCurrentUser(String username, UserUpdateDTO userUpdateDTO);
 
-    Page<UserDetailsDTO> findAllUsers(Pageable pageable);
+    Page<UserDetailsDTO> getAllUsers(Pageable pageable);
 
     UserDetailsDTO findById(Long id);
 

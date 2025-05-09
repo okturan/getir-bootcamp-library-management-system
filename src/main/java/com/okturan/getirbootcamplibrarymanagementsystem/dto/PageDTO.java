@@ -5,14 +5,14 @@ import org.springframework.data.domain.Page;
 import java.util.List;
 
 public record PageDTO<T>(
-    List<T> content,
-    long totalElements,
-    int totalPages,
-    int number,
-    int size,
-    boolean first,
-    boolean last,
-    boolean empty) {
+        List<T> content,
+        long totalElements,
+        int totalPages,
+        int number,
+        int size,
+        boolean first,
+        boolean last,
+        boolean empty) {
 
     public static <T> PageDTO<T> from(Page<T> page) {
         return new PageDTO<>(

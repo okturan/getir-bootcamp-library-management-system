@@ -1,5 +1,8 @@
 package com.okturan.getirbootcamplibrarymanagementsystem.exception;
 
+import jakarta.persistence.EntityNotFoundException;
+import jakarta.validation.ConstraintViolationException;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -13,10 +16,6 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.stream.Collectors;
-
-import jakarta.persistence.EntityNotFoundException;
-import jakarta.validation.ConstraintViolationException;
-import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @RestControllerAdvice
@@ -68,7 +67,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleDataIntegrity(DataIntegrityViolationException ex) {
         log.warn("Data integrity violation – {}", ex.getMostSpecificCause().getMessage());
         return body(HttpStatus.CONFLICT,
-                "Resource conflict: a record with the same unique identifier already exists");
+                    "Resource conflict: a record with the same unique identifier already exists");
     }
 
     @ExceptionHandler(BadCredentialsException.class)
@@ -100,10 +99,12 @@ public class GlobalExceptionHandler {
 
     /* ────────── DTOs (Java 17 records) ────────── */
 
-    public record ErrorResponse(int status, String message, LocalDateTime timestamp) { }
+    public record ErrorResponse(int status, String message, LocalDateTime timestamp) {
+    }
 
     public record ValidationErrorResponse(int status,
                                           String message,
                                           LocalDateTime timestamp,
-                                          Map<String, String> errors) { }
+                                          Map<String, String> errors) {
+    }
 }

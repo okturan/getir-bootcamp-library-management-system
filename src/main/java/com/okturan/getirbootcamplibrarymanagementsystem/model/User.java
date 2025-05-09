@@ -1,29 +1,12 @@
 package com.okturan.getirbootcamplibrarymanagementsystem.model;
 
-import org.hibernate.proxy.HibernateProxy;
+import jakarta.persistence.*;
+import lombok.*;
 
 import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
-
-import jakarta.persistence.CollectionTable;
-import jakarta.persistence.Column;
-import jakarta.persistence.ElementCollection;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-import lombok.ToString;
 
 @Entity
 @Table(name = "users")
@@ -69,7 +52,7 @@ public class User {
         this.email = email;
     }
 
-    public User(String username, String password, String email, String firstName, String lastName, 
+    public User(String username, String password, String email, String firstName, String lastName,
                 String address, String phoneNumber, LocalDate dateOfBirth) {
         this.username = username;
         this.password = password;
@@ -93,8 +76,12 @@ public class User {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
         User that = (User) o;
         return Objects.equals(username, that.username);
     }

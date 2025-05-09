@@ -2,7 +2,6 @@ package com.okturan.getirbootcamplibrarymanagementsystem.security;
 
 import com.okturan.getirbootcamplibrarymanagementsystem.model.User;
 import com.okturan.getirbootcamplibrarymanagementsystem.repository.UserRepository;
-
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;

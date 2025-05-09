@@ -3,7 +3,6 @@ package com.okturan.getirbootcamplibrarymanagementsystem.repository;
 import com.okturan.getirbootcamplibrarymanagementsystem.model.Book;
 import com.okturan.getirbootcamplibrarymanagementsystem.model.Borrowing;
 import com.okturan.getirbootcamplibrarymanagementsystem.model.User;
-
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -26,6 +25,7 @@ public interface BorrowingRepository extends JpaRepository<Borrowing, Long> {
 
     /**
      * Find all book IDs that are currently borrowed (not returned)
+     *
      * @param bookIds List of book IDs to check
      * @return Set of book IDs that are currently borrowed
      */

@@ -5,7 +5,6 @@ import com.okturan.getirbootcamplibrarymanagementsystem.dto.AuthResultDTO;
 import com.okturan.getirbootcamplibrarymanagementsystem.dto.LoginDTO;
 import com.okturan.getirbootcamplibrarymanagementsystem.dto.UserRegistrationDTO;
 
-
 public interface AuthService {
 
     AuthResultDTO registerPatron(UserRegistrationDTO registrationDTO);

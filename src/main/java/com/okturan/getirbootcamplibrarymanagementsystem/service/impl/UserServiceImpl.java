@@ -7,16 +7,13 @@ import com.okturan.getirbootcamplibrarymanagementsystem.mapper.UserMapper;
 import com.okturan.getirbootcamplibrarymanagementsystem.model.User;
 import com.okturan.getirbootcamplibrarymanagementsystem.repository.UserRepository;
 import com.okturan.getirbootcamplibrarymanagementsystem.service.UserService;
-
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -54,7 +51,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<UserDetailsDTO> findAllUsers(Pageable pageable) {
+    public Page<UserDetailsDTO> getAllUsers(Pageable pageable) {
         Page<User> usersPage = userRepository.findAll(pageable);
         return usersPage.map(userMapper::mapToDetailsDTO);
     }
