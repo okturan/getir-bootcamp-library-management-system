@@ -20,6 +20,7 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.LocalDate;
+import java.util.HashSet;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -78,7 +79,7 @@ public class AuthServiceTest {
         user.setUsername("testuser");
         user.setEmail("test@example.com");
         user.setPassword("encodedPassword");
-        user.setRoles(Set.of(Role.PATRON));
+        user.setRoles(new HashSet<>(Set.of(Role.PATRON)));
 
         userDetailsDTO = new UserDetailsDTO(
                 1L,
@@ -89,7 +90,7 @@ public class AuthServiceTest {
                 "123 Test St",
                 "+1-555-123-4567",
                 LocalDate.of(1990, 1, 1),
-                Set.of(Role.PATRON)
+                new HashSet<>(Set.of(Role.PATRON))
         );
 
         authentication = mock(Authentication.class);
@@ -131,7 +132,7 @@ public class AuthServiceTest {
         adminUser.setUsername("adminuser");
         adminUser.setEmail("admin@example.com");
         adminUser.setPassword("encodedPassword");
-        adminUser.setRoles(Set.of(Role.ADMIN));
+        adminUser.setRoles(new HashSet<>(Set.of(Role.ADMIN)));
 
         UserDetailsDTO adminDetailsDTO = new UserDetailsDTO(
                 2L,
@@ -142,7 +143,7 @@ public class AuthServiceTest {
                 "123 Admin St",
                 "+1-555-123-4567",
                 LocalDate.of(1990, 1, 1),
-                Set.of(Role.ADMIN)
+                new HashSet<>(Set.of(Role.ADMIN))
         );
 
         when(userMapper.mapToEntity(adminUserRegistrationDTO)).thenReturn(adminUser);

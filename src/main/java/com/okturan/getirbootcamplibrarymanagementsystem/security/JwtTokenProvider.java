@@ -6,14 +6,17 @@ import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.stream.Collectors;
 
@@ -30,10 +33,12 @@ public class JwtTokenProvider {
 
 	private final UserDetailsService userDetailsService;
 
-	public JwtTokenProvider(UserDetailsService userDetailsService) {
-		// Generate a secure key for HS512 algorithm
-		// In production, this should be externalized and properly secured
-		this.key = Keys.secretKeyFor(SignatureAlgorithm.HS512);
+	public JwtTokenProvider(UserDetailsService userDetailsService, @Value("${jwt.secret}") String secret) {
+		if (!StringUtils.hasText(secret)) {
+			throw new IllegalArgumentException("JWT secret cannot be blank");
+		}
+		// Use the provided secret to create a key for HS512 algorithm
+		this.key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
 		this.userDetailsService = userDetailsService;
 	}
 
