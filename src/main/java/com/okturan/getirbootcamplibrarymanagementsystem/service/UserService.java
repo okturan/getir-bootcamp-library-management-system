@@ -21,4 +21,6 @@ public interface UserService {
 
 	UserDetailsDTO findById(Long id);
 
+	void deleteUser(Long id);
+
 }

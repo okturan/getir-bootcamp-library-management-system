@@ -73,4 +73,12 @@ public class UserController implements UserApi {
 		return ResponseEntity.ok(updatedUser);
 	}
 
+	@Override
+	@DeleteMapping("/{id}")
+	@PreAuthorize("hasAnyRole('ADMIN', 'LIBRARIAN')")
+	public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
+		userService.deleteUser(id);
+		return ResponseEntity.noContent().build();
+	}
+
 }

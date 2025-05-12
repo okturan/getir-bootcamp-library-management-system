@@ -82,4 +82,12 @@ public class UserServiceImpl implements UserService {
 		return userMapper.mapToDetailsDTO(userRepository.save(existingUser));
 	}
 
+	@Override
+	public void deleteUser(Long id) {
+		log.info("Deleting user: id={}", id);
+
+		User user = getById(id);
+		userRepository.delete(user);
+	}
+
 }

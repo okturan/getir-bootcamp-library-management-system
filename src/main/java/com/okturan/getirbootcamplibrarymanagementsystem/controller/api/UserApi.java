@@ -55,4 +55,10 @@ public interface UserApi {
 			content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
 	ResponseEntity<UserDetailsDTO> updateUser(Long id, AdminUserUpdateDTO adminUserUpdateDTO);
 
+	@Operation(summary = "Delete user by ID", description = "Deletes a user by ID (admin/librarian only)")
+	@ApiResponse(responseCode = "204", description = "User deleted successfully")
+	@ApiResponse(responseCode = "404", description = "User not found",
+			content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
+	ResponseEntity<Void> deleteUser(Long id);
+
 }
