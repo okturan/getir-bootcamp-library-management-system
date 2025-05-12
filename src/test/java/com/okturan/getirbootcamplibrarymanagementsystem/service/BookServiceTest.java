@@ -280,9 +280,8 @@ public class BookServiceTest {
     void streamBookAvailabilityUpdates_ShouldReturnFlux() {
         // Arrange
         BookAvailabilityDTO availabilityDTO = new BookAvailabilityDTO(1L, "Test Book", "1234567890", true, "2023-05-15T14:30:45.123Z");
-        when(bookRepository.findById(anyLong())).thenReturn(Optional.of(book));
         when(borrowingRepository.existsByBookAndReturnedFalse(any(Book.class))).thenReturn(false);
-        when(bookMapper.createAvailabilityDTO(any(Book.class))).thenReturn(availabilityDTO);
+        when(bookMapper.createAvailabilityDTO(any(Book.class), anyString())).thenReturn(availabilityDTO);
 
         // Act
         Flux<BookAvailabilityDTO> result = bookService.streamBookAvailabilityUpdates();
@@ -299,6 +298,6 @@ public class BookServiceTest {
             .verifyComplete();
 
         verify(borrowingRepository).existsByBookAndReturnedFalse(book);
-        verify(bookMapper).createAvailabilityDTO(book);
+        verify(bookMapper).createAvailabilityDTO(eq(book), anyString());
     }
 }

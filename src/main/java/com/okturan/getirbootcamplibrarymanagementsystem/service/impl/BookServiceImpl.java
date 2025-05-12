@@ -22,6 +22,8 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Sinks;
 import reactor.core.scheduler.Schedulers;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Set;
 
@@ -202,7 +204,11 @@ public class BookServiceImpl implements BookService {
 		// Calculate availability based on borrowing status
 		calculateAvailability(book);
 
-		BookAvailabilityDTO dto = bookMapper.createAvailabilityDTO(book);
+		// Generate timestamp in the service layer
+		String timestamp = LocalDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME);
+
+		// Pass the timestamp to the mapper
+		BookAvailabilityDTO dto = bookMapper.createAvailabilityDTO(book, timestamp);
 		availabilitySink.tryEmitNext(dto);
 		log.info("Availability changed → emitted update for book {}", book.getId());
 	}

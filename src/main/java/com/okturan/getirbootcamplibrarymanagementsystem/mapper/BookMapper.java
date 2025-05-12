@@ -20,11 +20,6 @@ public interface BookMapper {
 	@BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
 	void updateEntityFromDto(BookRequestDTO dto, @MappingTarget Book book);
 
-	@Mapping(target = "timestamp", expression = "java(getCurrentTimestamp())")
-	BookAvailabilityDTO createAvailabilityDTO(Book book);
-
-	default String getCurrentTimestamp() {
-		return LocalDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME);
-	}
+	BookAvailabilityDTO createAvailabilityDTO(Book book, String timestamp);
 
 }
