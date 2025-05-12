@@ -59,15 +59,15 @@ public class BorrowingServiceImpl implements BorrowingService {
 
 		// Check if the book is already borrowed
 		if (borrowingRepo.existsByBookAndReturnedFalse(book)) {
-			throw new IllegalStateException("Book is not available");
+			throw new IllegalStateException("Book is currently borrowed by another patron and not available for borrowing. Please try again when the book has been returned.");
 		}
 
 		Borrowing borrowing = new Borrowing();
-		mapper.initBorrowing(borrowing, book, borrower, req);
+		mapper.initBorrowing(borrowing, book, borrower);
 
 		borrowingRepo.save(borrowing);
 
-		// Emit availability update (availability is now determined by borrowing status)
+		// Emit availability update (availability is determined by borrowing status)
 		bookService.emitAvailabilityUpdate(book);
 
 		return mapper.mapToDTO(borrowing);

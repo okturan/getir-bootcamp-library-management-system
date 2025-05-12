@@ -1,6 +1,5 @@
 package com.okturan.getirbootcamplibrarymanagementsystem.mapper;
 
-import com.okturan.getirbootcamplibrarymanagementsystem.dto.BorrowingRequestDTO;
 import com.okturan.getirbootcamplibrarymanagementsystem.dto.BorrowingResponseDTO;
 import com.okturan.getirbootcamplibrarymanagementsystem.model.Book;
 import com.okturan.getirbootcamplibrarymanagementsystem.model.Borrowing;
@@ -31,11 +30,11 @@ public interface BorrowingMapper {
 	 * Initialize a Borrowing entity for a new borrowing
 	 */
 	@Named("initBorrowing")
-	default void initBorrowing(Borrowing borrowing, Book book, User user, BorrowingRequestDTO request) {
+	default void initBorrowing(Borrowing borrowing, Book book, User user) {
 		borrowing.setBook(book);
 		borrowing.setUser(user);
 		borrowing.setBorrowDate(LocalDate.now());
-		borrowing.setDueDate(request.dueDate());
+		borrowing.setDueDate(LocalDate.now().plusDays(14)); // 2 weeks TODO: extract magic number elsewhere
 		borrowing.setReturned(false);
 	}
 
