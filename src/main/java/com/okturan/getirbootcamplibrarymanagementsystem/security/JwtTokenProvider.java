@@ -37,7 +37,6 @@ public class JwtTokenProvider {
 		if (!StringUtils.hasText(secret)) {
 			throw new IllegalArgumentException("JWT secret cannot be blank");
 		}
-		// Use the provided secret to create a key for HS512 algorithm
 		this.key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
 		this.userDetailsService = userDetailsService;
 	}
