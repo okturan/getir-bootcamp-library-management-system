@@ -1,7 +1,10 @@
 package com.okturan.getirbootcamplibrarymanagementsystem.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.okturan.getirbootcamplibrarymanagementsystem.dto.*;
+import com.okturan.getirbootcamplibrarymanagementsystem.dto.AdminUserRegistrationDTO;
+import com.okturan.getirbootcamplibrarymanagementsystem.dto.AuthResultDTO;
+import com.okturan.getirbootcamplibrarymanagementsystem.dto.LoginDTO;
+import com.okturan.getirbootcamplibrarymanagementsystem.dto.UserRegistrationDTO;
 import com.okturan.getirbootcamplibrarymanagementsystem.model.Role;
 import com.okturan.getirbootcamplibrarymanagementsystem.service.AuthService;
 import org.junit.jupiter.api.BeforeEach;

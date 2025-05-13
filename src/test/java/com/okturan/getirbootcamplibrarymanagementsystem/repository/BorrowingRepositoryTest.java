@@ -50,7 +50,7 @@ public class BorrowingRepositoryTest {
         book1 = new Book();
         book1.setTitle("Book 1");
         book1.setAuthor("Author 1");
-        book1.setIsbn("1111111111");
+        book1.setIsbn("978-1-56619-909-4");  // Valid ISBN-13 format
         book1.setPublicationDate(LocalDate.of(2020, 1, 1));
         book1.setGenre("Fiction");
         entityManager.persist(book1);
@@ -58,7 +58,7 @@ public class BorrowingRepositoryTest {
         book2 = new Book();
         book2.setTitle("Book 2");
         book2.setAuthor("Author 2");
-        book2.setIsbn("2222222222");
+        book2.setIsbn("978-1-4028-9462-0");  // Valid ISBN-13 format
         book2.setPublicationDate(LocalDate.of(2021, 1, 1));
         book2.setGenre("Non-Fiction");
         entityManager.persist(book2);
@@ -150,7 +150,7 @@ public class BorrowingRepositoryTest {
         Book unborrowed = new Book();
         unborrowed.setTitle("Unborrowed Book");
         unborrowed.setAuthor("Author");
-        unborrowed.setIsbn("3333333333");
+        unborrowed.setIsbn("978-0-7432-2674-0");  // Valid ISBN-13 format
         unborrowed.setPublicationDate(LocalDate.of(2022, 1, 1));
         unborrowed.setGenre("Mystery");
         entityManager.persist(unborrowed);

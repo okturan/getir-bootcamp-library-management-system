@@ -3,7 +3,6 @@ package com.okturan.getirbootcamplibrarymanagementsystem.service;
 import com.okturan.getirbootcamplibrarymanagementsystem.dto.BorrowingHistoryDTO;
 import com.okturan.getirbootcamplibrarymanagementsystem.dto.BorrowingRequestDTO;
 import com.okturan.getirbootcamplibrarymanagementsystem.dto.BorrowingResponseDTO;
-import com.okturan.getirbootcamplibrarymanagementsystem.dto.PageDTO;
 import com.okturan.getirbootcamplibrarymanagementsystem.mapper.BorrowingMapper;
 import com.okturan.getirbootcamplibrarymanagementsystem.model.Book;
 import com.okturan.getirbootcamplibrarymanagementsystem.model.Borrowing;
@@ -13,7 +12,6 @@ import com.okturan.getirbootcamplibrarymanagementsystem.repository.BookRepositor
 import com.okturan.getirbootcamplibrarymanagementsystem.repository.BorrowingRepository;
 import com.okturan.getirbootcamplibrarymanagementsystem.repository.UserRepository;
 import com.okturan.getirbootcamplibrarymanagementsystem.service.impl.BorrowingServiceImpl;
-import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -129,7 +127,7 @@ public class BorrowingServiceTest {
         when(borrowingRepository.existsByBookAndReturnedFalse(book)).thenReturn(false);
         doNothing().when(borrowingMapper).initBorrowing(any(Borrowing.class), eq(book), eq(patronUser));
         when(borrowingRepository.save(any(Borrowing.class))).thenReturn(borrowing);
-        when(borrowingMapper.mapToDTO(borrowing)).thenReturn(borrowingResponseDTO);
+        when(borrowingMapper.mapToDTO(any(Borrowing.class))).thenReturn(borrowingResponseDTO);
 
         // Act
         BorrowingResponseDTO result = borrowingService.borrowBook(borrowingRequestDTO);
@@ -141,13 +139,13 @@ public class BorrowingServiceTest {
         assertEquals("Test Book", result.bookTitle());
         assertEquals(1L, result.userId());
         assertEquals("patron", result.username());
-        
+
         verify(userRepository).findByUsername("patron");
         verify(bookRepository).findById(1L);
         verify(borrowingRepository).existsByBookAndReturnedFalse(book);
         verify(borrowingMapper).initBorrowing(any(Borrowing.class), eq(book), eq(patronUser));
         verify(borrowingRepository).save(any(Borrowing.class));
-        verify(borrowingMapper).mapToDTO(borrowing);
+        verify(borrowingMapper).mapToDTO(any(Borrowing.class));
         verify(bookService).emitAvailabilityUpdate(book);
     }
 
@@ -167,7 +165,7 @@ public class BorrowingServiceTest {
 
         // Act & Assert
         assertThrows(IllegalStateException.class, () -> borrowingService.borrowBook(borrowingRequestDTO));
-        
+
         verify(userRepository).findByUsername("patron");
         verify(bookRepository).findById(1L);
         verify(borrowingRepository).existsByBookAndReturnedFalse(book);
@@ -194,7 +192,7 @@ public class BorrowingServiceTest {
         when(borrowingRepository.existsByBookAndReturnedFalse(book)).thenReturn(false);
         doNothing().when(borrowingMapper).initBorrowing(any(Borrowing.class), eq(book), eq(patronUser));
         when(borrowingRepository.save(any(Borrowing.class))).thenReturn(borrowing);
-        when(borrowingMapper.mapToDTO(borrowing)).thenReturn(borrowingResponseDTO);
+        when(borrowingMapper.mapToDTO(any(Borrowing.class))).thenReturn(borrowingResponseDTO);
 
         // Act
         BorrowingResponseDTO result = borrowingService.borrowBook(requestWithUserId);
@@ -206,14 +204,14 @@ public class BorrowingServiceTest {
         assertEquals("Test Book", result.bookTitle());
         assertEquals(1L, result.userId());
         assertEquals("patron", result.username());
-        
+
         verify(userRepository).findByUsername("admin");
         verify(userRepository).findById(1L);
         verify(bookRepository).findById(1L);
         verify(borrowingRepository).existsByBookAndReturnedFalse(book);
         verify(borrowingMapper).initBorrowing(any(Borrowing.class), eq(book), eq(patronUser));
         verify(borrowingRepository).save(any(Borrowing.class));
-        verify(borrowingMapper).mapToDTO(borrowing);
+        verify(borrowingMapper).mapToDTO(any(Borrowing.class));
         verify(bookService).emitAvailabilityUpdate(book);
     }
 
@@ -234,7 +232,7 @@ public class BorrowingServiceTest {
 
         // Act & Assert
         assertThrows(AccessDeniedException.class, () -> borrowingService.borrowBook(requestWithUserId));
-        
+
         verify(userRepository).findByUsername("patron");
         verify(userRepository, never()).findById(anyLong());
         verify(bookRepository, never()).findById(anyLong());
@@ -246,7 +244,7 @@ public class BorrowingServiceTest {
         when(borrowingRepository.findById(1L)).thenReturn(Optional.of(borrowing));
         doNothing().when(borrowingMapper).returnBook(borrowing);
         when(borrowingRepository.save(borrowing)).thenReturn(borrowing);
-        when(borrowingMapper.mapToDTO(borrowing)).thenReturn(borrowingResponseDTO);
+        when(borrowingMapper.mapToDTO(any(Borrowing.class))).thenReturn(borrowingResponseDTO);
 
         // Act
         BorrowingResponseDTO result = borrowingService.returnBook(1L);
@@ -256,11 +254,11 @@ public class BorrowingServiceTest {
         assertEquals(1L, result.id());
         assertEquals(1L, result.bookId());
         assertEquals("Test Book", result.bookTitle());
-        
+
         verify(borrowingRepository).findById(1L);
         verify(borrowingMapper).returnBook(borrowing);
         verify(borrowingRepository).save(borrowing);
-        verify(borrowingMapper).mapToDTO(borrowing);
+        verify(borrowingMapper).mapToDTO(any(Borrowing.class));
         verify(bookService).emitAvailabilityUpdate(book);
     }
 
@@ -275,7 +273,7 @@ public class BorrowingServiceTest {
 
         // Act & Assert
         assertThrows(IllegalStateException.class, () -> borrowingService.returnBook(1L));
-        
+
         verify(borrowingRepository).findById(1L);
         verify(borrowingMapper, never()).returnBook(any(Borrowing.class));
         verify(borrowingRepository, never()).save(any(Borrowing.class));
@@ -286,7 +284,7 @@ public class BorrowingServiceTest {
     void getBorrowingById_ShouldReturnBorrowing() {
         // Mock repository and mapper
         when(borrowingRepository.findById(1L)).thenReturn(Optional.of(borrowing));
-        when(borrowingMapper.mapToDTO(borrowing)).thenReturn(borrowingResponseDTO);
+        when(borrowingMapper.mapToDTO(any(Borrowing.class))).thenReturn(borrowingResponseDTO);
 
         // Act
         BorrowingResponseDTO result = borrowingService.getBorrowingById(1L);
@@ -296,9 +294,9 @@ public class BorrowingServiceTest {
         assertEquals(1L, result.id());
         assertEquals(1L, result.bookId());
         assertEquals("Test Book", result.bookTitle());
-        
+
         verify(borrowingRepository).findById(1L);
-        verify(borrowingMapper).mapToDTO(borrowing);
+        verify(borrowingMapper).mapToDTO(any(Borrowing.class));
     }
 
     @Test
@@ -312,11 +310,11 @@ public class BorrowingServiceTest {
 
         // Mock repository and mapper
         when(userRepository.findByUsername("patron")).thenReturn(Optional.of(patronUser));
-        
+
         List<Borrowing> borrowings = List.of(borrowing);
         Page<Borrowing> borrowingsPage = new PageImpl<>(borrowings);
         when(borrowingRepository.findByUser(eq(patronUser), any(Pageable.class))).thenReturn(borrowingsPage);
-        when(borrowingMapper.mapToDTO(borrowing)).thenReturn(borrowingResponseDTO);
+        when(borrowingMapper.mapToDTO(any(Borrowing.class))).thenReturn(borrowingResponseDTO);
         when(borrowingRepository.countByUser(patronUser)).thenReturn(1L);
         when(borrowingRepository.countByUserAndReturnedFalse(patronUser)).thenReturn(1L);
         when(borrowingRepository.countByUserAndReturnedFalseAndDueDateBefore(eq(patronUser), any(LocalDate.class))).thenReturn(0L);
@@ -331,10 +329,10 @@ public class BorrowingServiceTest {
         assertEquals(1, result.totalBorrowings());
         assertEquals(1, result.currentBorrowings());
         assertEquals(0, result.overdueBorrowings());
-        
+
         verify(userRepository).findByUsername("patron");
         verify(borrowingRepository).findByUser(eq(patronUser), any(Pageable.class));
-        verify(borrowingMapper).mapToDTO(borrowing);
+        verify(borrowingMapper).mapToDTO(any(Borrowing.class));
         verify(borrowingRepository).countByUser(patronUser);
         verify(borrowingRepository).countByUserAndReturnedFalse(patronUser);
         verify(borrowingRepository).countByUserAndReturnedFalseAndDueDateBefore(eq(patronUser), any(LocalDate.class));
@@ -344,11 +342,11 @@ public class BorrowingServiceTest {
     void getUserBorrowingHistory_ShouldReturnSpecifiedUserHistory() {
         // Mock repository and mapper
         when(userRepository.findById(1L)).thenReturn(Optional.of(patronUser));
-        
+
         List<Borrowing> borrowings = List.of(borrowing);
         Page<Borrowing> borrowingsPage = new PageImpl<>(borrowings);
         when(borrowingRepository.findByUser(eq(patronUser), any(Pageable.class))).thenReturn(borrowingsPage);
-        when(borrowingMapper.mapToDTO(borrowing)).thenReturn(borrowingResponseDTO);
+        when(borrowingMapper.mapToDTO(any(Borrowing.class))).thenReturn(borrowingResponseDTO);
         when(borrowingRepository.countByUser(patronUser)).thenReturn(1L);
         when(borrowingRepository.countByUserAndReturnedFalse(patronUser)).thenReturn(1L);
         when(borrowingRepository.countByUserAndReturnedFalseAndDueDateBefore(eq(patronUser), any(LocalDate.class))).thenReturn(0L);
@@ -363,10 +361,10 @@ public class BorrowingServiceTest {
         assertEquals(1, result.totalBorrowings());
         assertEquals(1, result.currentBorrowings());
         assertEquals(0, result.overdueBorrowings());
-        
+
         verify(userRepository).findById(1L);
         verify(borrowingRepository).findByUser(eq(patronUser), any(Pageable.class));
-        verify(borrowingMapper).mapToDTO(borrowing);
+        verify(borrowingMapper).mapToDTO(any(Borrowing.class));
         verify(borrowingRepository).countByUser(patronUser);
         verify(borrowingRepository).countByUserAndReturnedFalse(patronUser);
         verify(borrowingRepository).countByUserAndReturnedFalseAndDueDateBefore(eq(patronUser), any(LocalDate.class));
@@ -378,7 +376,7 @@ public class BorrowingServiceTest {
         List<Borrowing> borrowings = List.of(borrowing);
         Page<Borrowing> borrowingsPage = new PageImpl<>(borrowings);
         when(borrowingRepository.findByReturned(eq(false), any(Pageable.class))).thenReturn(borrowingsPage);
-        when(borrowingMapper.mapToDTO(borrowing)).thenReturn(borrowingResponseDTO);
+        when(borrowingMapper.mapToDTO(any(Borrowing.class))).thenReturn(borrowingResponseDTO);
 
         // Act
         Page<BorrowingResponseDTO> result = borrowingService.getAllActiveBorrowings(Pageable.unpaged());
@@ -387,9 +385,9 @@ public class BorrowingServiceTest {
         assertNotNull(result);
         assertEquals(1, result.getTotalElements());
         assertEquals(borrowingResponseDTO, result.getContent().get(0));
-        
+
         verify(borrowingRepository).findByReturned(eq(false), any(Pageable.class));
-        verify(borrowingMapper).mapToDTO(borrowing);
+        verify(borrowingMapper).mapToDTO(any(Borrowing.class));
     }
 
     @Test
@@ -398,7 +396,7 @@ public class BorrowingServiceTest {
         List<Borrowing> borrowings = List.of(borrowing);
         Page<Borrowing> borrowingsPage = new PageImpl<>(borrowings);
         when(borrowingRepository.findByDueDateBeforeAndReturned(any(LocalDate.class), eq(false), any(Pageable.class))).thenReturn(borrowingsPage);
-        when(borrowingMapper.mapToDTO(borrowing)).thenReturn(borrowingResponseDTO);
+        when(borrowingMapper.mapToDTO(any(Borrowing.class))).thenReturn(borrowingResponseDTO);
 
         // Act
         Page<BorrowingResponseDTO> result = borrowingService.getAllOverdueBorrowings(Pageable.unpaged());
@@ -407,9 +405,9 @@ public class BorrowingServiceTest {
         assertNotNull(result);
         assertEquals(1, result.getTotalElements());
         assertEquals(borrowingResponseDTO, result.getContent().get(0));
-        
+
         verify(borrowingRepository).findByDueDateBeforeAndReturned(any(LocalDate.class), eq(false), any(Pageable.class));
-        verify(borrowingMapper).mapToDTO(borrowing);
+        verify(borrowingMapper).mapToDTO(any(Borrowing.class));
     }
 
     @Test
@@ -422,7 +420,7 @@ public class BorrowingServiceTest {
 
         // Assert
         assertTrue(result);
-        
+
         verify(borrowingRepository).findById(1L);
     }
 
@@ -436,7 +434,7 @@ public class BorrowingServiceTest {
 
         // Assert
         assertFalse(result);
-        
+
         verify(borrowingRepository).findById(1L);
     }
 }

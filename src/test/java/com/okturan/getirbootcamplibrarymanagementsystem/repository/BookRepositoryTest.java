@@ -28,15 +28,15 @@ public class BookRepositoryTest {
         Book book = new Book();
         book.setTitle("Test Book");
         book.setAuthor("Test Author");
-        book.setIsbn("1234567890");
+        book.setIsbn("978-3-16-148410-0");  // Valid ISBN-13 format
         book.setPublicationDate(LocalDate.of(2020, 1, 1));
         book.setGenre("Fiction");
-        
+
         entityManager.persist(book);
         entityManager.flush();
 
         // Act
-        Optional<Book> found = bookRepository.findByIsbn("1234567890");
+        Optional<Book> found = bookRepository.findByIsbn("978-3-16-148410-0");
 
         // Assert
         assertTrue(found.isPresent());
@@ -59,15 +59,15 @@ public class BookRepositoryTest {
         Book book = new Book();
         book.setTitle("Test Book");
         book.setAuthor("Test Author");
-        book.setIsbn("1234567890");
+        book.setIsbn("978-0-13-149505-0");  // Valid ISBN-13 format
         book.setPublicationDate(LocalDate.of(2020, 1, 1));
         book.setGenre("Fiction");
-        
+
         entityManager.persist(book);
         entityManager.flush();
 
         // Act
-        boolean exists = bookRepository.existsByIsbn("1234567890");
+        boolean exists = bookRepository.existsByIsbn("978-0-13-149505-0");
 
         // Assert
         assertTrue(exists);
@@ -88,21 +88,21 @@ public class BookRepositoryTest {
         Book book = new Book();
         book.setTitle("New Book");
         book.setAuthor("New Author");
-        book.setIsbn("9876543210");
+        book.setIsbn("978-1-4028-9462-6");  // Valid ISBN-13 format
         book.setPublicationDate(LocalDate.of(2021, 1, 1));
         book.setGenre("Non-Fiction");
 
         // Act
         Book saved = bookRepository.save(book);
-        
+
         // Assert
         assertNotNull(saved.getId());
-        
+
         Book found = entityManager.find(Book.class, saved.getId());
         assertNotNull(found);
         assertEquals("New Book", found.getTitle());
         assertEquals("New Author", found.getAuthor());
-        assertEquals("9876543210", found.getIsbn());
+        assertEquals("978-1-4028-9462-6", found.getIsbn());
     }
 
     @Test
@@ -111,17 +111,17 @@ public class BookRepositoryTest {
         Book book = new Book();
         book.setTitle("Book to Delete");
         book.setAuthor("Author to Delete");
-        book.setIsbn("5555555555");
+        book.setIsbn("978-0-306-40615-7");  // Valid ISBN-13 format
         book.setPublicationDate(LocalDate.of(2019, 1, 1));
         book.setGenre("Mystery");
-        
+
         Book persistedBook = entityManager.persist(book);
         entityManager.flush();
-        
+
         // Act
         bookRepository.delete(persistedBook);
         entityManager.flush();
-        
+
         // Assert
         Book found = entityManager.find(Book.class, persistedBook.getId());
         assertNull(found);

@@ -1,7 +1,6 @@
 package com.okturan.getirbootcamplibrarymanagementsystem.service.impl;
 
 import com.okturan.getirbootcamplibrarymanagementsystem.dto.*;
-import com.okturan.getirbootcamplibrarymanagementsystem.exception.UnauthorizedRoleCreationException;
 import com.okturan.getirbootcamplibrarymanagementsystem.mapper.UserMapper;
 import com.okturan.getirbootcamplibrarymanagementsystem.model.Role;
 import com.okturan.getirbootcamplibrarymanagementsystem.model.User;

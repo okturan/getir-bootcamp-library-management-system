@@ -2,10 +2,8 @@ package com.okturan.getirbootcamplibrarymanagementsystem.integration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.okturan.getirbootcamplibrarymanagementsystem.dto.LoginDTO;
-import com.okturan.getirbootcamplibrarymanagementsystem.dto.UserDetailsDTO;
 import com.okturan.getirbootcamplibrarymanagementsystem.dto.UserRegistrationDTO;
 import com.okturan.getirbootcamplibrarymanagementsystem.dto.UserUpdateDTO;
-import com.okturan.getirbootcamplibrarymanagementsystem.model.Role;
 import com.okturan.getirbootcamplibrarymanagementsystem.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -17,9 +15,6 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.time.LocalDate;
-import java.util.Set;
 
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;

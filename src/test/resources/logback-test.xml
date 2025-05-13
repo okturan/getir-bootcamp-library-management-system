@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <property name="PATTERN" 
+        value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %X{X-Request-ID:-} %logger{36} - %msg%n"/>
+
+    <!-- Console Appender -->
+    <appender name="Console" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>${PATTERN}</pattern>
+        </encoder>
+    </appender>
+
+    <!-- Root logger -->
+    <root level="INFO">
+        <appender-ref ref="Console" />
+    </root>
+
+    <!-- Set test-specific logging levels -->
+    <logger name="com.okturan" level="DEBUG"/>
+    <logger name="org.hibernate.SQL" level="DEBUG"/>
+    <logger name="org.hibernate.type.descriptor.sql.BasicBinder" level="TRACE"/>
+    <logger name="org.springframework.web" level="DEBUG"/>
+    <logger name="org.springframework.test.web.servlet" level="DEBUG"/>
+    <logger name="org.springframework.web.servlet.mvc.method.annotation" level="TRACE"/>
+</configuration>

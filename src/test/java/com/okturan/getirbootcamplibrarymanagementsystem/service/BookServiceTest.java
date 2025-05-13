@@ -23,7 +23,6 @@ import org.springframework.data.jpa.domain.Specification;
 import reactor.core.publisher.Flux;
 import reactor.test.StepVerifier;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
