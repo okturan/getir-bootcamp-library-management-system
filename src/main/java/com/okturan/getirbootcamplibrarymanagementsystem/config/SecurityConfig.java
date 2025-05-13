@@ -60,43 +60,45 @@ public class SecurityConfig {
 	@Bean
 	public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 		http.csrf(csrf -> csrf.disable()) // Disable CSRF for dev
-			.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-			.authorizeHttpRequests(auth -> auth
-				// Public endpoints - grouped for easier maintenance
-				.requestMatchers(PUBLIC)
-				.permitAll() // Allow all public endpoints
+				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+				.authorizeHttpRequests(auth -> auth
+						// Public endpoints - grouped for easier maintenance
+						.requestMatchers(PUBLIC)
+						.permitAll() // Allow all public endpoints
 
-				// Admin-only endpoints
-				.requestMatchers("/api/auth/admin/**")
-				.hasAuthority("ROLE_ADMIN") // Admin-only registration
+						// Admin-only endpoints
+						.requestMatchers("/api/auth/admin/**")
+						.hasAuthority("ROLE_ADMIN") // Admin-only registration
 
-				// Admin and Librarian endpoints
-				.requestMatchers(HttpMethod.POST, "/api/books/**")
-				.hasAnyAuthority("ROLE_ADMIN", "ROLE_LIBRARIAN")
-				.requestMatchers(HttpMethod.PUT, "/api/books/**")
-				.hasAnyAuthority("ROLE_ADMIN", "ROLE_LIBRARIAN")
-				.requestMatchers(HttpMethod.DELETE, "/api/books/**")
-				.hasAnyAuthority("ROLE_ADMIN", "ROLE_LIBRARIAN")
+						// Admin and Librarian endpoints
+						// Make POST /api/books specific
+						.requestMatchers(HttpMethod.POST, "/api/books")
+						.hasAnyAuthority("ROLE_ADMIN", "ROLE_LIBRARIAN")
+						// Keep /** for PUT and DELETE as they typically involve path variables like /api/books/{id}
+						.requestMatchers(HttpMethod.PUT, "/api/books/**")
+						.hasAnyAuthority("ROLE_ADMIN", "ROLE_LIBRARIAN")
+						.requestMatchers(HttpMethod.DELETE, "/api/books/**")
+						.hasAnyAuthority("ROLE_ADMIN", "ROLE_LIBRARIAN")
 
-				// All authenticated users (including patrons) can access read-only
-				// endpoints
-				.requestMatchers(HttpMethod.GET, "/api/books/**")
-				.authenticated()
+						// All authenticated users (including patrons) can access read-only
+						// endpoints. /** covers /api/books, /api/books/{id}, /api/books/search, etc.
+						.requestMatchers(HttpMethod.GET, "/api/books/**")
+						.authenticated()
 
-				// Any other request requires authentication
-				.anyRequest()
-				.authenticated())
-			.exceptionHandling(exceptions -> exceptions.authenticationEntryPoint(authenticationEntryPoint)
-				.accessDeniedHandler(accessDeniedHandler))
-			.headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()) // Allow
-																					// H2
-																					// Console
-																					// frames
-			)
-			.formLogin(form -> form.disable()) // Disable login form (optional, for pure
-												// APIs)
-			.authenticationProvider(authenticationProvider())
-			.addFilterBefore(jwtFilter(), UsernamePasswordAuthenticationFilter.class);
+						// Any other request requires authentication
+						.anyRequest()
+						.authenticated())
+				.exceptionHandling(exceptions -> exceptions.authenticationEntryPoint(authenticationEntryPoint)
+						.accessDeniedHandler(accessDeniedHandler))
+				.headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()) // Allow
+				         // H2
+				         // Console
+				         // frames
+				)
+				.formLogin(form -> form.disable()) // Disable login form (optional, for pure
+				// APIs)
+				.authenticationProvider(authenticationProvider())
+				.addFilterBefore(jwtFilter(), UsernamePasswordAuthenticationFilter.class);
 		return http.build();
 	}
 

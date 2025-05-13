@@ -1,7 +1,7 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<!-- src/test/resources/logback-test.xml -->
 <configuration>
-    <property name="PATTERN" 
-        value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %X{X-Request-ID:-} %logger{36} - %msg%n"/>
+    <property name="PATTERN"
+              value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %X{X-Request-ID:-} %logger{36} - %msg%n"/>
 
     <!-- Console Appender -->
     <appender name="Console" class="ch.qos.logback.core.ConsoleAppender">
@@ -22,4 +22,5 @@
     <logger name="org.springframework.web" level="DEBUG"/>
     <logger name="org.springframework.test.web.servlet" level="DEBUG"/>
     <logger name="org.springframework.web.servlet.mvc.method.annotation" level="TRACE"/>
+    <logger name="org.springframework.security" level="TRACE"/> <!-- Added TRACE for Spring Security -->
 </configuration>
