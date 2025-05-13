@@ -3,6 +3,7 @@ package com.okturan.getirbootcamplibrarymanagementsystem.service.impl;
 import com.okturan.getirbootcamplibrarymanagementsystem.dto.BorrowingHistoryDTO;
 import com.okturan.getirbootcamplibrarymanagementsystem.dto.BorrowingRequestDTO;
 import com.okturan.getirbootcamplibrarymanagementsystem.dto.BorrowingResponseDTO;
+import com.okturan.getirbootcamplibrarymanagementsystem.dto.OverdueReportDTO;
 import com.okturan.getirbootcamplibrarymanagementsystem.dto.PageDTO;
 import com.okturan.getirbootcamplibrarymanagementsystem.mapper.BorrowingMapper;
 import com.okturan.getirbootcamplibrarymanagementsystem.model.Book;
@@ -193,6 +194,30 @@ public class BorrowingServiceImpl implements BorrowingService {
 		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 		return userRepo.findByUsername(auth.getName())
 			.orElseThrow(() -> new EntityNotFoundException("User not found " + auth.getName()));
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public OverdueReportDTO generateOverdueReport(Pageable pageable) {
+		log.info("Generating overdue books report");
+
+		// Get paginated list of overdue borrowings
+		Page<BorrowingResponseDTO> overdueBorrowingsPage = getAllOverdueBorrowings(pageable);
+
+		// Calculate summary statistics
+		LocalDate today = LocalDate.now();
+		long totalOverdueCount = borrowingRepo.countByDueDateBeforeAndReturned(today, false);
+		long distinctUsersWithOverdueCount = borrowingRepo.countDistinctUsersByDueDateBeforeAndReturnedFalse(today);
+		long distinctBooksOverdueCount = borrowingRepo.countDistinctBooksByDueDateBeforeAndReturnedFalse(today);
+
+		// Create and return the report
+		return new OverdueReportDTO(
+				PageDTO.from(overdueBorrowingsPage),
+				(int) totalOverdueCount,
+				(int) distinctUsersWithOverdueCount,
+				(int) distinctBooksOverdueCount,
+				today
+		);
 	}
 
 }

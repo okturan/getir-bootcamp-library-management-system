@@ -4,6 +4,7 @@ import com.okturan.getirbootcamplibrarymanagementsystem.controller.api.Borrowing
 import com.okturan.getirbootcamplibrarymanagementsystem.dto.BorrowingHistoryDTO;
 import com.okturan.getirbootcamplibrarymanagementsystem.dto.BorrowingRequestDTO;
 import com.okturan.getirbootcamplibrarymanagementsystem.dto.BorrowingResponseDTO;
+import com.okturan.getirbootcamplibrarymanagementsystem.dto.OverdueReportDTO;
 import com.okturan.getirbootcamplibrarymanagementsystem.dto.PageDTO;
 import com.okturan.getirbootcamplibrarymanagementsystem.service.BorrowingService;
 import jakarta.validation.Valid;
@@ -83,6 +84,15 @@ public class BorrowingController implements BorrowingApi {
 			@ParameterObject @PageableDefault(page = 0, sort = "borrowDate", direction = Direction.DESC, size = 20) Pageable pageable) {
 		Page<BorrowingResponseDTO> page = borrowingService.getAllOverdueBorrowings(pageable);
 		return ResponseEntity.ok(PageDTO.from(page));
+	}
+
+	@Override
+	@GetMapping("/reports/overdue")
+	@PreAuthorize("hasAnyRole('LIBRARIAN', 'ADMIN')")
+	public ResponseEntity<OverdueReportDTO> generateOverdueReport(
+			@ParameterObject @PageableDefault(page = 0, sort = "dueDate", direction = Direction.ASC, size = 20) Pageable pageable) {
+		OverdueReportDTO report = borrowingService.generateOverdueReport(pageable);
+		return ResponseEntity.ok(report);
 	}
 
 }

@@ -3,6 +3,7 @@ package com.okturan.getirbootcamplibrarymanagementsystem.controller.api;
 import com.okturan.getirbootcamplibrarymanagementsystem.dto.BorrowingHistoryDTO;
 import com.okturan.getirbootcamplibrarymanagementsystem.dto.BorrowingRequestDTO;
 import com.okturan.getirbootcamplibrarymanagementsystem.dto.BorrowingResponseDTO;
+import com.okturan.getirbootcamplibrarymanagementsystem.dto.OverdueReportDTO;
 import com.okturan.getirbootcamplibrarymanagementsystem.dto.PageDTO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -68,5 +69,11 @@ public interface BorrowingApi {
 	@ApiResponse(responseCode = "200", description = "Overdue borrowings retrieved")
 	@ApiResponse(responseCode = "403", description = "Not authorized to view overdue borrowings")
 	ResponseEntity<PageDTO<BorrowingResponseDTO>> getAllOverdueBorrowings(Pageable pageable);
+
+	@Operation(summary = "Generate overdue books report",
+			description = "Generate a comprehensive report of all overdue books (librarians only)")
+	@ApiResponse(responseCode = "200", description = "Overdue books report generated")
+	@ApiResponse(responseCode = "403", description = "Not authorized to generate overdue books report")
+	ResponseEntity<OverdueReportDTO> generateOverdueReport(Pageable pageable);
 
 }

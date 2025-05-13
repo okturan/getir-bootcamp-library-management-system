@@ -31,11 +31,14 @@ public interface BorrowingRepository extends JpaRepository<Borrowing, Long> {
 
 	long countByUserAndReturnedFalseAndDueDateBefore(User user, LocalDate date);
 
-	/**
-	 * Find all book IDs that are currently borrowed (not returned)
-	 * @param bookIds List of book IDs to check
-	 * @return Set of book IDs that are currently borrowed
-	 */
+	long countByDueDateBeforeAndReturned(LocalDate date, boolean returned);
+
+	@Query("SELECT COUNT(DISTINCT b.user.id) FROM Borrowing b WHERE b.dueDate < :date AND b.returned = false")
+	long countDistinctUsersByDueDateBeforeAndReturnedFalse(@Param("date") LocalDate date);
+
+	@Query("SELECT COUNT(DISTINCT b.book.id) FROM Borrowing b WHERE b.dueDate < :date AND b.returned = false")
+	long countDistinctBooksByDueDateBeforeAndReturnedFalse(@Param("date") LocalDate date);
+
 	@Query("SELECT b.book.id FROM Borrowing b WHERE b.book.id IN :bookIds AND b.returned = false")
 	Set<Long> findBorrowedBookIdsByBookIds(@Param("bookIds") List<Long> bookIds);
 
