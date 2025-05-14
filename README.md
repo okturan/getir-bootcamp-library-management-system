@@ -143,5 +143,3 @@ mvn test
 | **401 Unauthorized** | Provide `Authorization: Bearer <token>` header or log in again. |
 | **Admin password not set in prod** | Supply `-Dadmin.password=<pwd>` or an env variable before first run. |
 | **Port conflict on 8080** | `server.port=<custom>` in `application.properties` or pass `--server.port`. |
-
----
