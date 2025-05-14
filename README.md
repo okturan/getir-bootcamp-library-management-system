@@ -27,6 +27,7 @@ It demonstrates a clean, test‑friendly implementation of common backend patter
 * Spring Data JPA + Hibernate
 * Spring Security + JWT
 * MapStruct for DTO mapping
+* Lombok for reducing boilerplate code
 * H2 (dev) / PostgreSQL 15 (prod)
 * Project Reactor (SSE)
 * JUnit 5 | Mockito | Spring Boot Test
