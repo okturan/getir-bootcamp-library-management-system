@@ -145,9 +145,3 @@ mvn test
 | **Port conflict on 8080** | `server.port=<custom>` in `application.properties` or pass `--server.port`. |
 
 ---
-
-### Contributing / Grading
-The code is kept intentionally straightforward for evaluators—  
-feel free to run, break, and extend it!
-
-Happy reviewing 👋
