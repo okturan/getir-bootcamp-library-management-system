@@ -1,0 +1,2430 @@
+{
+	"info": {
+		"_postman_id": "e8f36731-8696-43a4-9a5f-f7b752b5a2ac",
+		"name": "Library Management System API",
+		"description": "Postman collection for the Getir Bootcamp Library Management System API.\n\n**Setup:**\n\n1. Ensure the Spring Boot application is running.\n    \n2. Run the requests in the 'Authentication' folder first to obtain tokens:\n    - 'Login (Admin)' sets the `adminToken` collection variable.\n        \n    - 'Register Librarian (by Admin)' (using `adminToken`) creates a LIBRARIAN user and sets `currentLibrarianUsername`.\n        \n    - 'Login (Librarian)' (using `currentLibrarianUsername`) sets the `librarianToken` collection variable.\n        \n    - 'Register Patron' (and subsequently 'Login (Patron)') sets the `patronToken` and `currentPatronUsername` collection variables.\n        \n    - Then run 'Get Current User (as Patron)' in the 'Users' folder to set `createdPatronUserId`.\n        \n3. Some requests rely on IDs created by previous requests (e.g., `createdBookId`, `createdPatronUserId`). These are set by test scripts in relevant POST/GET requests.\n    \n4. **Destructive Operations:** Requests that delete users or books are located at the 'ZZZ - Cleanup (Run Last)' folder. Run this folder last, or selectively, as it will remove data used by other tests if run out of order.\n    \n\n**Base URL Variable:** `{{baseUrl}}` (default: [http://localhost:8080](http://localhost:8080))\n\n**Note:**\n\n- The collection is designed to be run in order, as some requests depend on the results of previous ones. For example, the 'Get User by ID (as Admin)' request requires a valid `createdPatronUserId`.\n    \n- The collection uses Postman test scripts to set environment variables based on API responses. This allows for dynamic testing and chaining of requests.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "36941396"
+	},
+	"item": [
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "Login (Admin)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData && jsonData.token) {",
+									"        pm.collectionVariables.set(\"adminToken\", jsonData.token);",
+									"        console.log(\"Admin token set: \" + jsonData.token);",
+									"    } else {",
+									"        console.log(\"Token not found in admin login response.\");",
+									"    }",
+									"} else {",
+									"    console.log(\"Admin login failed with status: \" + pm.response.code + \" Response: \" + pm.response.text());",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"admin\",\n    \"password\": \"admin123\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/login",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"login"
+							]
+						},
+						"description": "Logs in the default admin user. Sets the `adminToken` collection variable. This admin can register Librarians."
+					},
+					"response": [
+						{
+							"name": "Admin Login Successful",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"username\": \"admin\",\n    \"password\": \"admin123\"\n}"
+								},
+								"url": {
+									"raw": "http://localhost:8080/api/auth/login",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"api",
+										"auth",
+										"login"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"token\": \"eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhZG1pbiIsImF1dGgiOiJST0xFX0FETUlOIiwiZXhwIjoxNzAxNzYzMjMxfQ.ghijkl789012\",\n    \"tokenType\": \"Bearer\",\n    \"username\": \"admin\",\n    \"roles\": [\n        \"ADMIN\"\n    ]\n}"
+						}
+					]
+				},
+				{
+					"name": "Register Librarian (by Admin)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData && jsonData.username) {",
+									"        console.log(\"New Librarian registered: \" + jsonData.username);",
+									"        pm.collectionVariables.set(\"currentLibrarianUsername\", jsonData.username); // Store username for login",
+									"    } else {",
+									"        console.log(\"Username not found in librarian registration response.\");",
+									"    }",
+									"} else {",
+									"    console.log(\"Librarian registration failed with status: \" + pm.response.code + \" Response: \" + pm.response.text());",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{adminToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"{{createdLibrarianUsername}}\",\n    \"password\": \"{{createdLibrarianPassword}}\",\n    \"email\": \"{{createdLibrarianEmail}}\",\n    \"role\": \"LIBRARIAN\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/admin/register",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"admin",
+								"register"
+							]
+						},
+						"description": "Registers a new user with LIBRARIAN role. Requires an existing admin's token. Sets `currentLibrarianUsername`."
+					},
+					"response": [
+						{
+							"name": "Librarian Registered Successfully",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"username\": \"newlibrarian\",\n    \"password\": \"password123\",\n    \"email\": \"newlibrarian@example.com\",\n    \"role\": \"LIBRARIAN\"\n}"
+								},
+								"url": {
+									"raw": "http://localhost:8080/api/auth/admin/register",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"api",
+										"auth",
+										"admin",
+										"register"
+									]
+								}
+							},
+							"status": "Created",
+							"code": 201,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"token\": \"eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJuZXdsaWJyYXJpYW4iLCJhdXRoIjoiUk9MRV9MSUJSQVJJQU4iLCJleHAiOjE3MDE3NjQwMDB9.mnopqr901234\",\n    \"tokenType\": \"Bearer\",\n    \"username\": \"newlibrarian\",\n    \"roles\": [\n        \"LIBRARIAN\"\n    ]\n}"
+						}
+					]
+				},
+				{
+					"name": "Login (Librarian)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData && jsonData.token) {",
+									"        pm.collectionVariables.set(\"librarianToken\", jsonData.token);",
+									"        console.log(\"Librarian token set: \" + jsonData.token);",
+									"    } else {",
+									"        console.log(\"Token not found in librarian login response.\");",
+									"    }",
+									"} else {",
+									"    console.log(\"Librarian login failed with status: \" + pm.response.code + \" Response: \" + pm.response.text());",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"{{currentLibrarianUsername}}\",\n    \"password\": \"{{createdLibrarianPassword}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/login",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"login"
+							]
+						},
+						"description": "Logs in the librarian registered in the 'Register Librarian (by Admin)' step. Sets the `librarianToken` collection variable."
+					},
+					"response": [
+						{
+							"name": "Librarian Login Successful",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"username\": \"\",\n    \"password\": \"librarianpass123\"\n}"
+								},
+								"url": {
+									"raw": "http://localhost:8080/api/auth/login",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"api",
+										"auth",
+										"login"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"token\": \"eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJuZXdsaWJyYXJpYW4iLCJhdXRoIjoiUk9MRV9MSUJSQVJJQU4iLCJleHAiOjE3MDE3NjMyMzF9.stuvwx567890\",\n    \"tokenType\": \"Bearer\",\n    \"username\": \"newlibrarian\",\n    \"roles\": [\n        \"LIBRARIAN\"\n    ]\n}"
+						}
+					]
+				},
+				{
+					"name": "Register Patron",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData && jsonData.token) {",
+									"        pm.collectionVariables.set(\"patronToken\", jsonData.token);",
+									"        console.log(\"Patron token set from registration: \" + jsonData.token);",
+									"        pm.collectionVariables.set(\"currentPatronUsername\", jsonData.username); // Store username for login",
+									"    } else {",
+									"        console.log(\"Token not found in patron registration response.\");",
+									"    }",
+									"} else {",
+									"    console.log(\"Patron registration failed with status: \" + pm.response.code + \" Response: \" + pm.response.text());",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"{{createdPatronUsername}}\",\n    \"password\": \"{{createdPatronPassword}}\",\n    \"email\": \"{{createdPatronEmail}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/register",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"register"
+							]
+						},
+						"description": "Registers a new user with the PATRON role. The `createdPatronUsername` and `createdPatronEmail` variables use `{{$timestamp}}` to ensure uniqueness on re-runs. Sets `currentPatronUsername`."
+					},
+					"response": [
+						{
+							"name": "Patron Registered Successfully",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"username\": \"newpatron123\",\n    \"password\": \"password123\",\n    \"email\": \"newpatron123@example.com\"\n}"
+								},
+								"url": {
+									"raw": "http://localhost:8080/api/auth/register",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"api",
+										"auth",
+										"register"
+									]
+								}
+							},
+							"status": "Created",
+							"code": 201,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"token\": \"eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJuZXdwYXRyb24xMjMiLCJhdXRoIjoiUk9MRV9QQVRST04iLCJleHAiOjE3MDE3NjMwMDR9.abcdef123456\",\n    \"tokenType\": \"Bearer\",\n    \"username\": \"newpatron123\",\n    \"roles\": [\n        \"PATRON\"\n    ]\n}"
+						}
+					]
+				},
+				{
+					"name": "Login (Patron)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData && jsonData.token) {",
+									"        pm.collectionVariables.set(\"patronToken\", jsonData.token);",
+									"        console.log(\"Patron token set from login: \" + jsonData.token);",
+									"    } else {",
+									"        console.log(\"Token not found in patron login response.\");",
+									"    }",
+									"} else {",
+									"    console.log(\"Patron login failed with status: \" + pm.response.code + \" Response: \" + pm.response.text());",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"{{currentPatronUsername}}\",\n    \"password\": \"{{createdPatronPassword}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/login",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"login"
+							]
+						},
+						"description": "Logs in the patron registered in the 'Register Patron' step (or any other patron). Uses `currentPatronUsername`."
+					},
+					"response": [
+						{
+							"name": "Patron Login Successful",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"username\": \"testpatron1747182451\",\n    \"password\": \"password123\"\n}"
+								},
+								"url": {
+									"raw": "http://localhost:8080/api/auth/login",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"api",
+										"auth",
+										"login"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"token\": \"eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJuZXdwYXRyb24xMjMiLCJhdXRoIjoiUk9MRV9QQVRST04iLCJleHAiOjE3MDE3NjMwMDR9.abcdef123456\",\n    \"tokenType\": \"Bearer\",\n    \"username\": \"newpatron123\",\n    \"roles\": [\n        \"PATRON\"\n    ]\n}"
+						}
+					]
+				}
+			],
+			"description": "User registration and login.",
+			"auth": {
+				"type": "noauth"
+			}
+		},
+		{
+			"name": "Users",
+			"item": [
+				{
+					"name": "Get Current User (as Patron)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData && jsonData.id) {",
+									"        pm.collectionVariables.set(\"createdPatronUserId\", jsonData.id);",
+									"        console.log(\"Patron User ID set: \" + jsonData.id);",
+									"    } else {",
+									"        console.log(\"Patron User ID not found in get current user response.\");",
+									"    }",
+									"} else {",
+									"    console.log(\"Get current user (patron) failed with status: \" + pm.response.code + \" Response: \" + pm.response.text());",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{patronToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/users/me",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"users",
+								"me"
+							]
+						},
+						"description": "Retrieves the profile of the currently authenticated patron. Sets `createdPatronUserId`."
+					},
+					"response": [
+						{
+							"name": "Current Patron User Details",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "http://localhost:8080/api/users/me",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"api",
+										"users",
+										"me"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"id\": 2,\n    \"username\": \"testpatron1670143500\",\n    \"email\": \"testpatron1670143500@example.com\",\n    \"firstName\": null,\n    \"lastName\": null,\n    \"address\": null,\n    \"phoneNumber\": null,\n    \"dateOfBirth\": null,\n    \"roles\": [\n        \"PATRON\"\n    ]\n}"
+						}
+					]
+				},
+				{
+					"name": "Update Current User (as Patron)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{patronToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"firstName\": \"UpdatedPatronFirst\",\n    \"lastName\": \"UpdatedPatronLast\",\n    \"address\": \"123 Updated St, Patronville\",\n    \"phoneNumber\": \"+1-555-000-1111\",\n    \"email\": \"{{createdPatronEmail}}\" \n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/users/me",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"users",
+								"me"
+							]
+						},
+						"description": "Updates the profile of the currently authenticated patron. Email can be updated if it's unique."
+					},
+					"response": [
+						{
+							"name": "Current Patron User Updated",
+							"originalRequest": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"firstName\": \"UpdatedPatronFirst\",\n    \"lastName\": \"UpdatedPatronLast\",\n    \"address\": \"123 Updated St, Patronville\",\n    \"phoneNumber\": \"+1-555-000-1111\",\n    \"email\": \"updatedpatron@example.com\"\n}"
+								},
+								"url": {
+									"raw": "http://localhost:8080/api/users/me",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"api",
+										"users",
+										"me"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"id\": 2,\n    \"username\": \"testpatron1670143500\",\n    \"email\": \"testpatron1670143500@example.com\",\n    \"firstName\": \"UpdatedPatronFirst\",\n    \"lastName\": \"UpdatedPatronLast\",\n    \"address\": \"123 Updated St, Patronville\",\n    \"phoneNumber\": \"+1-555-000-1111\",\n    \"dateOfBirth\": null,\n    \"roles\": [\n        \"PATRON\"\n    ]\n}"
+						}
+					]
+				},
+				{
+					"name": "Get All Users (as Admin)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{adminToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/users?page=0&size=10&sort=username,asc",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"users"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "10"
+								},
+								{
+									"key": "sort",
+									"value": "username,asc"
+								}
+							]
+						},
+						"description": "Retrieves a paginated list of all users. Requires admin token."
+					},
+					"response": [
+						{
+							"name": "All Users List",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "http://localhost:8080/api/users?page=0&size=10",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"api",
+										"users"
+									],
+									"query": [
+										{
+											"key": "page",
+											"value": "0"
+										},
+										{
+											"key": "size",
+											"value": "10"
+										}
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"content\": [\n        {\n            \"id\": 1,\n            \"username\": \"admin\",\n            \"email\": \"admin@example.com\",\n            \"firstName\": null,\n            \"lastName\": null,\n            \"address\": null,\n            \"phoneNumber\": null,\n            \"dateOfBirth\": null,\n            \"roles\": [\n                \"ADMIN\"\n            ]\n        },\n        {\n            \"id\": 2,\n            \"username\": \"testpatron1670143500\",\n            \"email\": \"testpatron1670143500@example.com\",\n            \"firstName\": \"UpdatedPatronFirst\",\n            \"lastName\": \"UpdatedPatronLast\",\n            \"address\": \"123 Updated St, Patronville\",\n            \"phoneNumber\": \"+1-555-000-1111\",\n            \"dateOfBirth\": null,\n            \"roles\": [\n                \"PATRON\"\n            ]\n        }\n    ],\n    \"totalElements\": 2,\n    \"totalPages\": 1,\n    \"number\": 0,\n    \"size\": 10,\n    \"first\": true,\n    \"last\": true,\n    \"empty\": false\n}"
+						}
+					]
+				},
+				{
+					"name": "Get User by ID (as Admin)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{adminToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/users/{{createdPatronUserId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"users",
+								"{{createdPatronUserId}}"
+							]
+						},
+						"description": "Retrieves a specific user by their ID. Uses `createdPatronUserId`. Requires admin token."
+					},
+					"response": [
+						{
+							"name": "Specific User Details",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "http://localhost:8080/api/users/2",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"api",
+										"users",
+										"2"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"id\": 2,\n    \"username\": \"testpatron1670143500\",\n    \"email\": \"testpatron1670143500@example.com\",\n    \"firstName\": \"UpdatedPatronFirst\",\n    \"lastName\": \"UpdatedPatronLast\",\n    \"address\": \"123 Updated St, Patronville\",\n    \"phoneNumber\": \"+1-555-000-1111\",\n    \"dateOfBirth\": null,\n    \"roles\": [\n        \"PATRON\"\n    ]\n}"
+						}
+					]
+				},
+				{
+					"name": "Update User by ID (as Admin)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{adminToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"firstName\": \"AdminUpdatedFirst\",\n    \"lastName\": \"AdminUpdatedLast\",\n    \"address\": \"456 Admin Main St\",\n    \"phoneNumber\": \"+1-555-111-2222\",\n    \"dateOfBirth\": \"1985-05-15\",\n    \"roles\": [\"PATRON\"]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/users/{{createdPatronUserId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"users",
+								"{{createdPatronUserId}}"
+							]
+						},
+						"description": "Updates a specific user by their ID. Username and email must be unique if changed. Requires admin token. Admin can change roles but should be careful (e.g. not demoting the last admin)."
+					},
+					"response": [
+						{
+							"name": "User Updated by Admin",
+							"originalRequest": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"username\": \"testpatron1670143500\",\n    \"email\": \"testpatron1670143500@example.com\",\n    \"firstName\": \"AdminUpdatedFirst\",\n    \"lastName\": \"AdminUpdatedLast\",\n    \"address\": \"456 Admin Main St\",\n    \"phoneNumber\": \"+1-555-111-2222\",\n    \"dateOfBirth\": \"1985-05-15\",\n    \"roles\": [\"PATRON\", \"LIBRARIAN\"]\n}"
+								},
+								"url": {
+									"raw": "http://localhost:8080/api/users/2",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"api",
+										"users",
+										"2"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"id\": 2,\n    \"username\": \"testpatron1670143500\",\n    \"email\": \"testpatron1670143500@example.com\",\n    \"firstName\": \"AdminUpdatedFirst\",\n    \"lastName\": \"AdminUpdatedLast\",\n    \"address\": \"456 Admin Main St\",\n    \"phoneNumber\": \"+1-555-111-2222\",\n    \"dateOfBirth\": \"1985-05-15\",\n    \"roles\": [\n        \"PATRON\",\n        \"LIBRARIAN\"\n    ]\n}"
+						}
+					]
+				}
+			],
+			"description": "Manage user accounts. Patron self-service and Admin operations."
+		},
+		{
+			"name": "Books",
+			"item": [
+				{
+					"name": "Create Book (as Librarian)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData && jsonData.id) {",
+									"        pm.collectionVariables.set(\"createdBookId\", jsonData.id);",
+									"        console.log(\"Created Book ID set: \" + jsonData.id);",
+									"    } else {",
+									"        console.log(\"Book ID not found in create book response.\");",
+									"    }",
+									"} else {",
+									"    console.log(\"Create book failed with status: \" + pm.response.code + \" Response: \" + pm.response.text());",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{librarianToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Effective Java\",\n    \"author\": \"Joshua Bloch\",\n    \"isbn\": \"{{bookIsbn1}}\",\n    \"publicationDate\": \"2017-12-27\",\n    \"genre\": \"Programming\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/books",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"books"
+							]
+						},
+						"description": "Creates a new book. Requires librarian token. Sets `createdBookId`."
+					},
+					"response": [
+						{
+							"name": "Book Created",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"title\": \"Effective Java\",\n    \"author\": \"Joshua Bloch\",\n    \"isbn\": \"978-0321765723\",\n    \"publicationDate\": \"2017-12-27\",\n    \"genre\": \"Programming\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/books",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"books"
+									]
+								}
+							},
+							"status": "Created",
+							"code": 201,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"id\": 101,\n    \"title\": \"Effective Java\",\n    \"author\": \"Joshua Bloch\",\n    \"isbn\": \"978-0321765723\",\n    \"publicationDate\": \"2017-12-27\",\n    \"genre\": \"Programming\",\n    \"available\": true\n}"
+						}
+					]
+				},
+				{
+					"name": "Get Book by ID (as Patron)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{patronToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/books/{{createdBookId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"books",
+								"{{createdBookId}}"
+							]
+						},
+						"description": "Retrieves a book by its ID. Uses `createdBookId` from 'Create Book' request. Requires any authenticated user token."
+					},
+					"response": [
+						{
+							"name": "Book Found by ID",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/books/101",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"books",
+										"101"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"id\": 101,\n    \"title\": \"Effective Java\",\n    \"author\": \"Joshua Bloch\",\n    \"isbn\": \"978-0321765723\",\n    \"publicationDate\": \"2017-12-27\",\n    \"genre\": \"Programming\",\n    \"available\": true\n}"
+						}
+					]
+				},
+				{
+					"name": "Get Book by ISBN (as Patron)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{patronToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/books/isbn/{{bookIsbn1}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"books",
+								"isbn",
+								"{{bookIsbn1}}"
+							]
+						},
+						"description": "Retrieves a book by its ISBN. Uses `bookIsbn1`. Requires any authenticated user token."
+					},
+					"response": [
+						{
+							"name": "Book Found by ISBN",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/books/isbn/978-0321765723",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"books",
+										"isbn",
+										"978-0321765723"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"id\": 101,\n    \"title\": \"Effective Java\",\n    \"author\": \"Joshua Bloch\",\n    \"isbn\": \"978-0321765723\",\n    \"publicationDate\": \"2017-12-27\",\n    \"genre\": \"Programming\",\n    \"available\": true\n}"
+						}
+					]
+				},
+				{
+					"name": "Get All Books (as Patron)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{patronToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/books?page=0&size=5&sort=title,asc",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"books"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "5"
+								},
+								{
+									"key": "sort",
+									"value": "title,asc"
+								}
+							]
+						},
+						"description": "Retrieves a paginated list of all books. Requires any authenticated user token."
+					},
+					"response": [
+						{
+							"name": "List of Books",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/books?page=0&size=5",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"books"
+									],
+									"query": [
+										{
+											"key": "page",
+											"value": "0"
+										},
+										{
+											"key": "size",
+											"value": "5"
+										}
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"content\": [\n        {\n            \"id\": 101,\n            \"title\": \"Effective Java\",\n            \"author\": \"Joshua Bloch\",\n            \"isbn\": \"978-0321765723\",\n            \"publicationDate\": \"2017-12-27\",\n            \"genre\": \"Programming\",\n            \"available\": true\n        }\n    ],\n    \"totalElements\": 1,\n    \"totalPages\": 1,\n    \"number\": 0,\n    \"size\": 5,\n    \"first\": true,\n    \"last\": true,\n    \"empty\": false\n}"
+						}
+					]
+				},
+				{
+					"name": "Search Books (as Patron)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{patronToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/books/search?title=Java&author=Bloch&genre=Programming&available=true&page=0&size=5",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"books",
+								"search"
+							],
+							"query": [
+								{
+									"key": "title",
+									"value": "Java"
+								},
+								{
+									"key": "author",
+									"value": "Bloch"
+								},
+								{
+									"key": "genre",
+									"value": "Programming"
+								},
+								{
+									"key": "available",
+									"value": "true"
+								},
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "5"
+								}
+							]
+						},
+						"description": "Searches for books based on various criteria. Requires any authenticated user token."
+					},
+					"response": [
+						{
+							"name": "Search Results",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/books/search?title=Java&genre=Programming&available=true",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"books",
+										"search"
+									],
+									"query": [
+										{
+											"key": "title",
+											"value": "Java"
+										},
+										{
+											"key": "genre",
+											"value": "Programming"
+										},
+										{
+											"key": "available",
+											"value": "true"
+										}
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"content\": [\n        {\n            \"id\": 101,\n            \"title\": \"Effective Java\",\n            \"author\": \"Joshua Bloch\",\n            \"isbn\": \"978-0321765723\",\n            \"publicationDate\": \"2017-12-27\",\n            \"genre\": \"Programming\",\n            \"available\": true\n        }\n    ],\n    \"totalElements\": 1,\n    \"totalPages\": 1,\n    \"number\": 0,\n    \"size\": 5,\n    \"first\": true,\n    \"last\": true,\n    \"empty\": false\n}"
+						}
+					]
+				},
+				{
+					"name": "Update Book (as Librarian)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{librarianToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Effective Java (3rd Edition - Librarian Update)\",\n    \"author\": \"Joshua Bloch\",\n    \"isbn\": \"{{bookIsbn1}}\", \n    \"publicationDate\": \"2018-01-06\",\n    \"genre\": \"Software Engineering\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/books/{{createdBookId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"books",
+								"{{createdBookId}}"
+							]
+						},
+						"description": "Updates an existing book. Requires librarian token. ISBN can be changed if new ISBN is unique."
+					},
+					"response": [
+						{
+							"name": "Book Updated",
+							"originalRequest": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"title\": \"Effective Java (3rd Edition)\",\n    \"author\": \"Joshua Bloch\",\n    \"isbn\": \"978-0321765723\",\n    \"publicationDate\": \"2018-01-06\",\n    \"genre\": \"Software Engineering\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/books/101",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"books",
+										"101"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"id\": 101,\n    \"title\": \"Effective Java (3rd Edition - Librarian Update)\",\n    \"author\": \"Joshua Bloch\",\n    \"isbn\": \"978-0321765723\",\n    \"publicationDate\": \"2018-01-06\",\n    \"genre\": \"Software Engineering\",\n    \"available\": true\n}"
+						}
+					]
+				},
+				{
+					"name": "Stream Book Availability (SSE)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{patronToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/books/availability/stream",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"books",
+								"availability",
+								"stream"
+							]
+						},
+						"description": "Streams real-time book availability updates using Server-Sent Events (SSE).\n\n**Note:** Postman has limited support for visualizing SSE streams directly. You might see the initial connection, but continuous updates are better observed with tools like `curl` or in a web browser's developer console.\n\nExample `curl` command: `curl -N -H \"Authorization: Bearer YOUR_TOKEN\" http://localhost:8080/api/books/availability/stream`"
+					},
+					"response": [
+						{
+							"name": "SSE Stream Connected (Conceptual)",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/books/availability/stream",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"books",
+										"availability",
+										"stream"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "text",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "text/event-stream"
+								}
+							],
+							"cookie": [],
+							"body": "id:101\nevent:book-availability-update\ndata:{\"id\":101,\"title\":\"Effective Java\",\"isbn\":\"978-0321765723\",\"available\":false,\"timestamp\":\"2023-12-04T10:00:00.123Z\"}\n\n"
+						}
+					]
+				}
+			],
+			"description": "Manage books in the library."
+		},
+		{
+			"name": "Borrowings",
+			"item": [
+				{
+					"name": "Borrow Book (as Patron)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData && jsonData.id) {",
+									"        pm.collectionVariables.set(\"borrowingId\", jsonData.id);",
+									"        console.log(\"Borrowing ID set: \" + jsonData.id);",
+									"    } else {",
+									"        console.log(\"Borrowing ID not found in borrow book response.\");",
+									"    }",
+									"} else {",
+									"    console.log(\"Borrow book failed with status: \" + pm.response.code + \" Response: \" + pm.response.text());",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{patronToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"bookId\": {{createdBookId}} \n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/borrowings/borrow",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"borrowings",
+								"borrow"
+							]
+						},
+						"description": "Allows an authenticated patron to borrow a book. Uses `createdBookId` from 'Create Book' and `patronToken`. Sets `borrowingId`."
+					},
+					"response": [
+						{
+							"name": "Book Borrowed Successfully",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"bookId\": 101\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/borrowings/borrow",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"borrowings",
+										"borrow"
+									]
+								}
+							},
+							"status": "Created",
+							"code": 201,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"id\": 201,\n    \"bookId\": 101,\n    \"bookTitle\": \"Effective Java\",\n    \"bookIsbn\": \"978-0321765723\",\n    \"userId\": 2, \n    \"username\": \"testpatron1670143500\",\n    \"borrowDate\": \"2023-12-04\",\n    \"dueDate\": \"2023-12-18\",\n    \"returnDate\": null,\n    \"returned\": false,\n    \"overdue\": false\n}"
+						}
+					]
+				},
+				{
+					"name": "Borrow Book (as Librarian for Patron)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{librarianToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"bookId\": {{createdBookId}}, \n    \"userId\": {{createdPatronUserId}} \n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/borrowings/borrow",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"borrowings",
+								"borrow"
+							]
+						},
+						"description": "Allows a librarian to borrow a book for a specific patron. Uses `createdBookId`, `createdPatronUserId`, and `librarianToken`."
+					},
+					"response": [
+						{
+							"name": "Book Borrowed by Librarian for Patron",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"bookId\": 101, \n    \"userId\": 2 \n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/borrowings/borrow",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"borrowings",
+										"borrow"
+									]
+								}
+							},
+							"status": "Created",
+							"code": 201,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"id\": 202,\n    \"bookId\": 101,\n    \"bookTitle\": \"Effective Java\",\n    \"bookIsbn\": \"978-0321765723\",\n    \"userId\": 2, \n    \"username\": \"testpatron1670143500\",\n    \"borrowDate\": \"2023-12-04\",\n    \"dueDate\": \"2023-12-18\",\n    \"returnDate\": null,\n    \"returned\": false,\n    \"overdue\": false\n}"
+						}
+					]
+				},
+				{
+					"name": "Return Book (as Patron/Owner)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{patronToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/borrowings/{{borrowingId}}/return",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"borrowings",
+								"{{borrowingId}}",
+								"return"
+							]
+						},
+						"description": "Allows the owner of the borrowing (patron) to return the book. Uses `borrowingId` from 'Borrow Book' and `patronToken`."
+					},
+					"response": [
+						{
+							"name": "Book Returned Successfully by Patron",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/borrowings/201/return",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"borrowings",
+										"201",
+										"return"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"id\": 201,\n    \"bookId\": 101,\n    \"bookTitle\": \"Effective Java\",\n    \"bookIsbn\": \"978-0321765723\",\n    \"userId\": 2,\n    \"username\": \"testpatron1670143500\",\n    \"borrowDate\": \"2023-12-04\",\n    \"dueDate\": \"2023-12-18\",\n    \"returnDate\": \"2023-12-05\",\n    \"returned\": true,\n    \"overdue\": false\n}"
+						}
+					]
+				},
+				{
+					"name": "Return Book (as Librarian)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{librarianToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/borrowings/{{borrowingId}}/return",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"borrowings",
+								"{{borrowingId}}",
+								"return"
+							]
+						},
+						"description": "Allows a librarian to return any book. Uses `borrowingId` (ensure this borrowing exists and is not yet returned) and `librarianToken`."
+					},
+					"response": [
+						{
+							"name": "Book Returned Successfully by Librarian",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/borrowings/202/return",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"borrowings",
+										"202",
+										"return"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"id\": 202,\n    \"bookId\": 101,\n    \"bookTitle\": \"Effective Java\",\n    \"bookIsbn\": \"978-0321765723\",\n    \"userId\": 2,\n    \"username\": \"testpatron1670143500\",\n    \"borrowDate\": \"2023-12-04\",\n    \"dueDate\": \"2023-12-18\",\n    \"returnDate\": \"2023-12-05\",\n    \"returned\": true,\n    \"overdue\": false\n}"
+						}
+					]
+				},
+				{
+					"name": "Get Borrowing by ID (as Patron/Owner)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{patronToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/borrowings/{{borrowingId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"borrowings",
+								"{{borrowingId}}"
+							]
+						},
+						"description": "Retrieves details of a specific borrowing if the authenticated user is the owner. Uses `borrowingId` and `patronToken`."
+					},
+					"response": [
+						{
+							"name": "Borrowing Details for Owner",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/borrowings/201",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"borrowings",
+										"201"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"id\": 201,\n    \"bookId\": 101,\n    \"bookTitle\": \"Effective Java\",\n    \"bookIsbn\": \"978-0321765723\",\n    \"userId\": 2,\n    \"username\": \"testpatron1670143500\",\n    \"borrowDate\": \"2023-12-04\",\n    \"dueDate\": \"2023-12-18\",\n    \"returnDate\": \"2023-12-05\",\n    \"returned\": true,\n    \"overdue\": false\n}"
+						}
+					]
+				},
+				{
+					"name": "Get Borrowing by ID (as Librarian)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{librarianToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/borrowings/{{borrowingId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"borrowings",
+								"{{borrowingId}}"
+							]
+						},
+						"description": "Retrieves details of any borrowing. Uses `borrowingId` and `librarianToken`."
+					},
+					"response": [
+						{
+							"name": "Borrowing Details for Librarian",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/borrowings/201",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"borrowings",
+										"201"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"id\": 201,\n    \"bookId\": 101,\n    \"bookTitle\": \"Effective Java\",\n    \"bookIsbn\": \"978-0321765723\",\n    \"userId\": 2,\n    \"username\": \"testpatron1670143500\",\n    \"borrowDate\": \"2023-12-04\",\n    \"dueDate\": \"2023-12-18\",\n    \"returnDate\": \"2023-12-05\",\n    \"returned\": true,\n    \"overdue\": false\n}"
+						}
+					]
+				},
+				{
+					"name": "Get Current User Borrowing History (as Patron)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{patronToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/borrowings/history?page=0&size=10&sort=borrowDate,desc",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"borrowings",
+								"history"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "10"
+								},
+								{
+									"key": "sort",
+									"value": "borrowDate,desc"
+								}
+							]
+						},
+						"description": "Retrieves the borrowing history for the currently authenticated patron. Uses `patronToken`."
+					},
+					"response": [
+						{
+							"name": "Patron Borrowing History",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/borrowings/history?page=0&size=10",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"borrowings",
+										"history"
+									],
+									"query": [
+										{
+											"key": "page",
+											"value": "0"
+										},
+										{
+											"key": "size",
+											"value": "10"
+										}
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"userId\": 2,\n    \"username\": \"testpatron1670143500\",\n    \"borrowingsPage\": {\n        \"content\": [\n            {\n                \"id\": 201,\n                \"bookId\": 101,\n                \"bookTitle\": \"Effective Java\",\n                \"bookIsbn\": \"978-0321765723\",\n                \"userId\": 2,\n                \"username\": \"testpatron1670143500\",\n                \"borrowDate\": \"2023-12-04\",\n                \"dueDate\": \"2023-12-18\",\n                \"returnDate\": \"2023-12-05\",\n                \"returned\": true,\n                \"overdue\": false\n            }\n        ],\n        \"totalElements\": 1,\n        \"totalPages\": 1,\n        \"number\": 0,\n        \"size\": 10,\n        \"first\": true,\n        \"last\": true,\n        \"empty\": false\n    },\n    \"totalBorrowings\": 1,\n    \"currentBorrowings\": 0,\n    \"overdueBorrowings\": 0\n}"
+						}
+					]
+				},
+				{
+					"name": "Get User Borrowing History (as Librarian)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{librarianToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/borrowings/users/{{createdPatronUserId}}/history?page=0&size=10",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"borrowings",
+								"users",
+								"{{createdPatronUserId}}",
+								"history"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "10"
+								}
+							]
+						},
+						"description": "Retrieves the borrowing history for a specific user. Requires librarian token. Uses `createdPatronUserId` and `librarianToken`."
+					},
+					"response": [
+						{
+							"name": "Specific User Borrowing History for Librarian",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/borrowings/users/2/history?page=0&size=10",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"borrowings",
+										"users",
+										"2",
+										"history"
+									],
+									"query": [
+										{
+											"key": "page",
+											"value": "0"
+										},
+										{
+											"key": "size",
+											"value": "10"
+										}
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"userId\": 2,\n    \"username\": \"testpatron1670143500\",\n    \"borrowingsPage\": {\n        \"content\": [\n            {\n                \"id\": 201,\n                \"bookId\": 101,\n                \"bookTitle\": \"Effective Java\",\n                \"bookIsbn\": \"978-0321765723\",\n                \"userId\": 2,\n                \"username\": \"testpatron1670143500\",\n                \"borrowDate\": \"2023-12-04\",\n                \"dueDate\": \"2023-12-18\",\n                \"returnDate\": \"2023-12-05\",\n                \"returned\": true,\n                \"overdue\": false\n            }\n        ],\n        \"totalElements\": 1,\n        \"totalPages\": 1,\n        \"number\": 0,\n        \"size\": 10,\n        \"first\": true,\n        \"last\": true,\n        \"empty\": false\n    },\n    \"totalBorrowings\": 1,\n    \"currentBorrowings\": 0,\n    \"overdueBorrowings\": 0\n}"
+						}
+					]
+				},
+				{
+					"name": "Get All Active Borrowings (as Librarian)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{librarianToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/borrowings/active?page=0&size=10&sort=dueDate,asc",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"borrowings",
+								"active"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "10"
+								},
+								{
+									"key": "sort",
+									"value": "dueDate,asc"
+								}
+							]
+						},
+						"description": "Retrieves all currently active (not returned) borrowings. Requires librarian token."
+					},
+					"response": [
+						{
+							"name": "Active Borrowings List",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/borrowings/active?page=0&size=10",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"borrowings",
+										"active"
+									],
+									"query": [
+										{
+											"key": "page",
+											"value": "0"
+										},
+										{
+											"key": "size",
+											"value": "10"
+										}
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"content\": [],\n    \"totalElements\": 0, \n    \"totalPages\": 0,   \n    \"number\": 0,\n    \"size\": 10,\n    \"first\": true,\n    \"last\": true,\n    \"empty\": true \n}"
+						}
+					]
+				},
+				{
+					"name": "Get All Overdue Borrowings (as Librarian)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{librarianToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/borrowings/overdue?page=0&size=10&sort=dueDate,asc",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"borrowings",
+								"overdue"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "10"
+								},
+								{
+									"key": "sort",
+									"value": "dueDate,asc"
+								}
+							]
+						},
+						"description": "Retrieves all overdue borrowings. Requires librarian token."
+					},
+					"response": [
+						{
+							"name": "Overdue Borrowings List",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/borrowings/overdue?page=0&size=10",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"borrowings",
+										"overdue"
+									],
+									"query": [
+										{
+											"key": "page",
+											"value": "0"
+										},
+										{
+											"key": "size",
+											"value": "10"
+										}
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"content\": [],\n    \"totalElements\": 0, \n    \"totalPages\": 0,   \n    \"number\": 0,\n    \"size\": 10,\n    \"first\": true,\n    \"last\": true,\n    \"empty\": true \n}"
+						}
+					]
+				},
+				{
+					"name": "Get a Report on Overdue Borrowings",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{librarianToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/borrowings/reports/overdue",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"borrowings",
+								"reports",
+								"overdue"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"description": "Manage book borrowing and returning."
+		},
+		{
+			"name": "ZZZ - Cleanup (Run Last)",
+			"item": [
+				{
+					"name": "Delete User by ID (as Admin)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{adminToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/users/{{createdPatronUserId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"users",
+								"{{createdPatronUserId}}"
+							]
+						},
+						"description": "Deletes the patron user created during the tests (`createdPatronUserId`). Requires admin token. **Caution**: This is a destructive operation. Ensure this is run after all tests that depend on this user."
+					},
+					"response": [
+						{
+							"name": "User Deleted",
+							"originalRequest": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/users/2",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"users",
+										"2"
+									]
+								}
+							},
+							"status": "No Content",
+							"code": 204,
+							"_postman_previewlanguage": "json",
+							"header": [],
+							"cookie": [],
+							"body": ""
+						}
+					]
+				},
+				{
+					"name": "Delete Book (as Librarian)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{librarianToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/books/{{createdBookId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"books",
+								"{{createdBookId}}"
+							]
+						},
+						"description": "Deletes the book created during the tests (`createdBookId`). Requires librarian token. **Caution**: This is a destructive operation. Ensure this is run after all tests that depend on this book (e.g., borrowing tests)."
+					},
+					"response": [
+						{
+							"name": "Book Deleted",
+							"originalRequest": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/books/101",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"books",
+										"101"
+									]
+								}
+							},
+							"status": "No Content",
+							"code": 204,
+							"_postman_previewlanguage": "json",
+							"header": [],
+							"cookie": [],
+							"body": ""
+						}
+					]
+				}
+			],
+			"description": "Contains destructive operations. Run this folder last or selectively after other tests are complete."
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8080"
+		},
+		{
+			"key": "adminToken",
+			"value": ""
+		},
+		{
+			"key": "librarianToken",
+			"value": ""
+		},
+		{
+			"key": "patronToken",
+			"value": ""
+		},
+		{
+			"key": "createdBookId",
+			"value": ""
+		},
+		{
+			"key": "createdPatronUsername",
+			"value": "testpatron{{$timestamp}}"
+		},
+		{
+			"key": "createdPatronEmail",
+			"value": "testpatron{{$timestamp}}@example.com"
+		},
+		{
+			"key": "createdPatronPassword",
+			"value": "password123"
+		},
+		{
+			"key": "createdPatronUserId",
+			"value": ""
+		},
+		{
+			"key": "currentPatronUsername",
+			"value": ""
+		},
+		{
+			"key": "createdLibrarianUsername",
+			"value": "testlibrarian{{$timestamp}}"
+		},
+		{
+			"key": "createdLibrarianEmail",
+			"value": "testlibrarian{{$timestamp}}@example.com"
+		},
+		{
+			"key": "createdLibrarianPassword",
+			"value": "librarianpass123"
+		},
+		{
+			"key": "currentLibrarianUsername",
+			"value": ""
+		},
+		{
+			"key": "borrowingId",
+			"value": ""
+		},
+		{
+			"key": "bookIsbn1",
+			"value": "978-3-16-148410-0"
+		},
+		{
+			"key": "bookIsbn2",
+			"value": "978-0-306-40615-7"
+		},
+		{
+			"key": "bookIsbn3",
+			"value": "978-1-4028-9462-6"
+		}
+	]
+}
