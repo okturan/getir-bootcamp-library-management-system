@@ -10,17 +10,8 @@
         </encoder>
     </appender>
 
-    <!-- Root logger -->
-    <root level="INFO">
+    <!-- Keep CI output focused on failures; Maven still reports every test class. -->
+    <root level="WARN">
         <appender-ref ref="Console" />
     </root>
-
-    <!-- Set test-specific logging levels -->
-    <logger name="com.okturan" level="DEBUG"/>
-    <logger name="org.hibernate.SQL" level="DEBUG"/>
-    <logger name="org.hibernate.type.descriptor.sql.BasicBinder" level="TRACE"/>
-    <logger name="org.springframework.web" level="DEBUG"/>
-    <logger name="org.springframework.test.web.servlet" level="DEBUG"/>
-    <logger name="org.springframework.web.servlet.mvc.method.annotation" level="TRACE"/>
-    <logger name="org.springframework.security" level="TRACE"/> <!-- Added TRACE for Spring Security -->
 </configuration>

@@ -1,146 +1,149 @@
 # Getir Bootcamp Library Management System
 
-A compact Spring Boot project built for **Getir’s Java bootcamp final assignment**.  
-It demonstrates a clean, test‑friendly implementation of common backend patterns—JWT security, RBAC, CRUD, pagination, streaming, and global exception handling.
+[![CI](https://github.com/okturan/getir-bootcamp-library-management-system/actions/workflows/ci.yml/badge.svg)](https://github.com/okturan/getir-bootcamp-library-management-system/actions/workflows/ci.yml)
+[![Java 21](https://img.shields.io/badge/Java-21-ED8B00?logo=openjdk&logoColor=white)](https://adoptium.net/temurin/releases/?version=21)
+[![Spring Boot 3.4](https://img.shields.io/badge/Spring%20Boot-3.4-6DB33F?logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
----
+A Spring Boot REST API built for Getir's Java bootcamp final assignment. It models a single-copy library with JWT authentication, role-based authorization, borrowing workflows, overdue reporting, and server-sent availability events.
 
-## Features
-| Area                     | What’s Included |
-|--------------------------|-----------------|
-| **Authentication**       | JWT login & registration (`/api/auth`) |
-| **Roles**                | `ADMIN`, `LIBRARIAN`, `PATRON` with granular method & endpoint security |
-| **Books**                | Basic CRUD plus simple search & pagination. Only one copy per ISBN. |
-| **Borrowing**            | Borrow / return endpoints, user history, active/overdue lists |
-| **Real‑time updates**    | Server‑Sent Events stream (`/api/books/availability/stream`) for availability flips |
-| **Swagger UI**           | Auto‑generated docs and “try it out” |
-| **Profiles**             | `dev` (H2, mock data, swagger) & `prod` (PostgreSQL, docker‑compose) |
-| **Bootstrap data**       | Initial admin user + optional seed users/books/borrowings |
-| **Global error handling**| Uniform JSON replies for validation, auth, and server errors |
+## What it demonstrates
 
-> **Scope note**: The domain is intentionally lean—no author entity, single‑genre field, single copy of each book.
+| Capability | Implementation |
+| --- | --- |
+| Authentication | Registration and login with signed JWT bearer tokens |
+| Authorization | `ADMIN`, `LIBRARIAN`, and `PATRON` policies at HTTP and method level |
+| Catalog | Book CRUD, ISBN uniqueness, filtering, and paginated queries |
+| Circulation | Borrow, return, personal history, active loans, and overdue reports |
+| Live updates | Reactor-backed Server-Sent Events when a book's availability changes |
+| API usability | OpenAPI/Swagger UI plus an executable Postman collection |
+| Persistence | H2 for local development and PostgreSQL for container runs |
+| Quality | Unit, repository, controller, security, and full-context integration tests |
 
----
+The domain is intentionally compact: a book stores its author and genre directly, and each ISBN represents one lendable copy.
 
-## Tech Stack
-* **Java 21**, **Spring Boot 3.4.5**
-* Spring Data JPA + Hibernate
-* Spring Security + JWT
-* MapStruct for DTO mapping
-* Lombok for reducing boilerplate code
-* H2 (dev) / PostgreSQL 15 (prod)
-* Project Reactor (SSE)
-* JUnit 5 | Mockito | Spring Boot Test
-* SLF4J / Logback (daily & size‑based rolling)
+## Project status
 
----
+This is a completed bootcamp reference project, not a hosted production service. There is no public demo or live API. The default mode is designed for local exploration with an in-memory database and clearly marked development credentials. The `prod` profile requires database, admin, and JWT secrets from the environment and does not load mock data.
 
-## Project Structure
+## Architecture
+
+```text
+HTTP / JSON
+    |
+controllers + OpenAPI contracts
+    |
+services (authorization and circulation rules)
+    |
+Spring Data repositories
+    |
+H2 locally / PostgreSQL in containers
+
+JWT filter -> Spring Security -> role- and ownership-aware endpoints
+Book state changes -> Reactor sink -> SSE availability stream
 ```
-src/main/java
- └─ com.okturan.getirbootcamplibrarymanagementsystem
-    ├─ controller      // REST endpoints
-    ├─ service         // Business logic
-    ├─ repository      // JPA repositories
-    ├─ model           // Entities & enums
-    ├─ mapper          // MapStruct mappers
-    ├─ security        // JWT & security helpers
-    ├─ config          // Spring configuration
-    └─ bootstrap       // Admin & mock data initializers
+
+```text
+src/main/java/com/okturan/getirbootcamplibrarymanagementsystem
+├── bootstrap      # local admin and optional mock-data initialization
+├── config         # Spring Security and OpenAPI configuration
+├── controller     # REST endpoints and API contracts
+├── dto            # request/response boundaries
+├── mapper         # MapStruct entity/DTO mapping
+├── model          # JPA entities and roles
+├── repository     # Spring Data queries
+├── security       # JWT parsing and request authentication
+└── service        # application and circulation rules
 ```
-`src/test` mirrors `main` with unit, repository, and integration tests.
 
-### Database Schema
-![Database Schema](db_diagram.png)
+### Data model
 
----
+![Library database schema showing users, roles, books, and borrowings](db_diagram.png)
 
-## Getting Started
+## Run locally
 
-### 1 ‑ Clone & Build
+Requirements: Java 21. The Maven wrapper downloads the pinned Maven 3.9.9 distribution on first use.
+
 ```bash
 git clone https://github.com/okturan/getir-bootcamp-library-management-system.git
 cd getir-bootcamp-library-management-system
-mvn clean install
+./mvnw spring-boot:run
 ```
 
-### 2 ‑ Run (Dev Profile, H2)
-```bash
-mvn spring-boot:run
-```
-*App starts at http://localhost:8080*
+The API starts at `http://localhost:8080` with an in-memory H2 database and sample records.
 
-**Dev goodies**
+| Local resource | URL / value |
+| --- | --- |
+| Swagger UI | <http://localhost:8080/swagger-ui.html> |
+| OpenAPI JSON | <http://localhost:8080/v3/api-docs> |
+| H2 console | <http://localhost:8080/h2-console> |
+| H2 JDBC URL | `jdbc:h2:mem:testdb` |
+| Development admin | `admin` / `admin123` |
 
-| Item       | URL |
-|------------|-----|
-| Swagger UI | `/swagger-ui.html` |
-| H2 Console | `/h2-console` (JDBC URL `jdbc:h2:mem:testdb`, no pwd) |
+The development admin and JWT key are intentionally local-only defaults. The `prod` profile overrides them with required environment variables.
 
-### Default Admin (auto‑created)
+## Run with PostgreSQL and Docker
 
-| Username | Password |
-|----------|----------|
-| `admin`  | `admin123` |
-
----
-
-## Running with Docker
-Application dockerizes itself along with a PostgreSQL database.
-To run with Docker, first build the image:
+Copy the example environment file, fill its three blank secret values, then start the stack:
 
 ```bash
-docker-compose up --build       # start PostgreSQL
+cp .env.example .env
+docker compose --env-file .env up --build
 ```
-As this is the first time you run the app, it will create the database and seed it with mock data.
-If you want to run the app again, mock data initialization will throw an error. In this case you need to delete the database first:
+
+`compose.yaml` refuses to start when `POSTGRES_PASSWORD`, `ADMIN_PASSWORD`, or `JWT_SECRET` is missing. Generate a strong JWT secret, for example:
+
 ```bash
-docker-compose down -v
+openssl rand -base64 48
 ```
 
-Then build again for a fresh start.
+The Docker configuration uses the `prod` profile, disables sample-data generation, waits for PostgreSQL health, and runs the application as a non-root user. Hibernate schema updates remain enabled by default for this reference project; set `JPA_DDL_AUTO` explicitly if your deployment manages schema changes separately.
 
----
+## API guide
 
-## API Docs
-* **Swagger UI** → `GET /swagger-ui.html`
-* **OpenAPI JSON** → `GET /v3/api-docs`
-* **Postman Collection** → [postman_collection.json](postman_collection.json) (Import into Postman for testing)
+| Route group | Purpose | Typical access |
+| --- | --- | --- |
+| `/api/auth` | Register patrons, log in, and create privileged users | Public login/registration; admin for privileged registration |
+| `/api/users` | Current-user profile and user administration | Authenticated; elevated operations are role-restricted |
+| `/api/books` | Catalog CRUD, search, pagination, and availability stream | Authenticated reads; admin/librarian writes |
+| `/api/borrowings` | Borrow/return, history, active/overdue lists, and reports | Authenticated with ownership/role checks |
 
-Key groups:
-* `/api/auth` – registration & login
-* `/api/users` – profile & admin operations
-* `/api/books` – CRUD, search, SSE stream
-* `/api/borrowings` – borrow/return, history, reports
+Import [`postman_collection.json`](postman_collection.json) to exercise the complete workflow. The collection chains generated IDs and tokens; its example JWT values and passwords are non-production fixtures.
 
----
+## Test and build
 
-## Testing
 ```bash
-mvn test
+./mvnw --batch-mode --no-transfer-progress verify
 ```
-* Uses the `test` profile (H2, mock data disabled).
-* Integration tests boot the full context with MockMvc.
 
-**For a better experience right click on the test folder and click `Run 'All Tests'`.**
+The suite uses the `test` profile with H2 and mock data disabled. It covers service rules, repositories, controllers, custom security handlers, and full-context MockMvc API flows. For pull requests and pushes to `main`, GitHub Actions runs the same command on Java 21 and builds the application container.
 
----
+To build the container independently:
 
-## Logging
-* Pattern: `YYYY‑MM‑DD HH:mm:ss.mmm [thread] LEVEL <request‑id> logger – message`
-* Files:
-  * `./logs/application.log` (INFO+)
-  * `./logs/error.log` (ERROR only)
-  * Daily + 10 MB size rotation, 30‑day retention
-* Each request gets a unique `X‑Request-ID` header (see `RequestIdFilter`).
+```bash
+docker build -t library-management-api .
+```
 
----
+## Configuration
 
-## Troubleshooting
+Production values are supplied through environment variables; secrets are never given committed production defaults.
 
-| Symptom | Fix |
-|---------|-----|
-| **“Book not available”** while borrowing | The single copy is already checked out. Return it first. |
-| **401 Unauthorized** | Provide `Authorization: Bearer <token>` header or log in again. |
-| **Admin password not set in prod** | Supply `-Dadmin.password=<pwd>` or an env variable before first run. |
-| **Port conflict on 8080** | `server.port=<custom>` in `application.properties` or pass `--server.port`. |
+| Variable | Required in `prod` | Purpose |
+| --- | --- | --- |
+| `SPRING_DATASOURCE_URL` | Yes | PostgreSQL JDBC URL |
+| `SPRING_DATASOURCE_USERNAME` | Yes | Database role |
+| `SPRING_DATASOURCE_PASSWORD` | Yes | Database password |
+| `ADMIN_PASSWORD` | Yes | Initial admin password when no admin exists |
+| `JWT_SECRET` | Yes | HMAC signing key; use at least 32 random bytes |
+| `ADMIN_USERNAME` | No | Initial admin username, default `admin` |
+| `ADMIN_EMAIL` | No | Initial admin email |
+| `MOCK_DATA_ENABLED` | No | Sample data switch; defaults to `false` in `prod` |
+| `JPA_DDL_AUTO` | No | Hibernate schema policy; defaults to `update` for this reference stack |
+
+## Logging and request tracing
+
+Every request receives an `X-Request-ID`. Console logs include that identifier, and local file logs rotate daily or at 10 MB with 30-day retention. Generated logs are ignored by Git.
+
+## License
+
+Licensed under the [MIT License](LICENSE).

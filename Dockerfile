@@ -1,19 +1,21 @@
 FROM eclipse-temurin:21-jdk-alpine AS build
-WORKDIR /workspace/app
 
+WORKDIR /workspace/app
 COPY mvnw .
 COPY .mvn .mvn
 COPY pom.xml .
 COPY src src
 
-RUN chmod +x ./mvnw
-RUN ./mvnw install -DskipTests
-RUN mkdir -p target/dependency && (cd target/dependency; jar -xf ../*.jar)
+RUN chmod +x ./mvnw \
+    && ./mvnw --batch-mode --no-transfer-progress package -DskipTests
 
 FROM eclipse-temurin:21-jre-alpine
-VOLUME /tmp
-ARG DEPENDENCY=/workspace/app/target/dependency
-COPY --from=build ${DEPENDENCY}/BOOT-INF/lib /app/lib
-COPY --from=build ${DEPENDENCY}/META-INF /app/META-INF
-COPY --from=build ${DEPENDENCY}/BOOT-INF/classes /app
-ENTRYPOINT ["java","-cp","app:app/lib/*","com.okturan.getirbootcamplibrarymanagementsystem.GetirBootcampLibraryManagementSystemApplication"]
+
+RUN addgroup -S app && adduser -S app -G app
+WORKDIR /app
+RUN mkdir -p /app/logs && chown app:app /app/logs
+COPY --from=build --chown=app:app /workspace/app/target/*.jar /app/app.jar
+
+USER app
+EXPOSE 8080
+ENTRYPOINT ["java", "-jar", "/app/app.jar"]
