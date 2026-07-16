@@ -43,7 +43,7 @@ jobs:
           trap 'docker rm --force library-management-api-ci >/dev/null 2>&1 || true' EXIT
 
           for _ in {1..60}; do
-            if curl --fail --silent http://127.0.0.1:18080/actuator/health | grep --quiet '"status":"UP"'; then
+            if curl --fail --silent http://127.0.0.1:18080/v3/api-docs | grep --quiet '"openapi":'; then
               exit 0
             fi
             if [ "$(docker inspect --format '{{.State.Running}}' library-management-api-ci)" != "true" ]; then
