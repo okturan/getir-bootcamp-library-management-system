@@ -1,0 +1,115 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-labelledby="title description">
+  <title id="title">Library API architecture and borrowing event flow</title>
+  <desc id="description">A diagram showing clients entering through public authentication or JWT verification, role-based authorization, Spring controllers and services, transactional persistence in H2 or PostgreSQL, and borrowing changes emitted as server-sent availability events.</desc>
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#07111f"/>
+      <stop offset="1" stop-color="#111c33"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#7c3aed"/>
+      <stop offset="1" stop-color="#22d3ee"/>
+    </linearGradient>
+    <filter id="shadow" x="-15%" y="-20%" width="130%" height="150%">
+      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#020617" flood-opacity="0.45"/>
+    </filter>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#7dd3fc"/>
+    </marker>
+    <marker id="event-arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#34d399"/>
+    </marker>
+    <style>
+      .title { font: 700 30px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #f8fafc; }
+      .subtitle { font: 400 15px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #94a3b8; }
+      .lane { font: 700 12px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; letter-spacing: 1.6px; fill: #64748b; }
+      .box-title { font: 700 16px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #f8fafc; }
+      .box-copy { font: 400 13px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #cbd5e1; }
+      .chip { font: 700 11px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #dbeafe; }
+      .note { font: 600 12px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #a7f3d0; }
+      .flow { stroke: #7dd3fc; stroke-width: 2.2; fill: none; marker-end: url(#arrow); }
+      .event { stroke: #34d399; stroke-width: 2.4; fill: none; marker-end: url(#event-arrow); stroke-dasharray: 7 6; }
+    </style>
+  </defs>
+
+  <rect width="1280" height="720" rx="24" fill="url(#background)"/>
+  <rect x="48" y="42" width="7" height="58" rx="3.5" fill="url(#accent)"/>
+  <text x="76" y="70" class="title">Library API — authenticated circulation flow</text>
+  <text x="76" y="94" class="subtitle">JWT + role policies · transactional borrowing · JPA persistence · live availability events</text>
+
+  <text x="52" y="142" class="lane">REQUEST BOUNDARY</text>
+  <rect x="48" y="158" width="1184" height="134" rx="18" fill="#0f1c31" stroke="#23324c"/>
+
+  <g filter="url(#shadow)">
+    <rect x="72" y="184" width="176" height="80" rx="14" fill="#17243a" stroke="#334155"/>
+    <text x="92" y="213" class="box-title">API clients</text>
+    <text x="92" y="237" class="box-copy">Swagger · Postman · app</text>
+    <rect x="274" y="184" width="190" height="80" rx="14" fill="#17243a" stroke="#475569"/>
+    <text x="294" y="213" class="box-title">Auth boundary</text>
+    <text x="294" y="237" class="box-copy">register · login · signed JWT</text>
+    <rect x="490" y="184" width="184" height="80" rx="14" fill="#17243a" stroke="#475569"/>
+    <text x="510" y="213" class="box-title">JWT filter</text>
+    <text x="510" y="237" class="box-copy">verify bearer · set identity</text>
+    <rect x="700" y="184" width="206" height="80" rx="14" fill="#17243a" stroke="#7c3aed"/>
+    <text x="720" y="213" class="box-title">Authorization</text>
+    <text x="720" y="237" class="box-copy">route + method policies</text>
+    <rect x="932" y="184" width="276" height="80" rx="14" fill="#17243a" stroke="#22d3ee"/>
+    <text x="952" y="213" class="box-title">REST + OpenAPI controllers</text>
+    <text x="952" y="237" class="box-copy">auth · users · books · borrowings</text>
+  </g>
+  <path d="M248 224 H274" class="flow"/>
+  <path d="M464 224 H490" class="flow"/>
+  <path d="M674 224 H700" class="flow"/>
+  <path d="M906 224 H932" class="flow"/>
+  <rect x="716" y="269" width="56" height="20" rx="10" fill="#312e81"/><text x="728" y="283" class="chip">ADMIN</text>
+  <rect x="778" y="269" width="76" height="20" rx="10" fill="#164e63"/><text x="788" y="283" class="chip">LIBRARIAN</text>
+  <rect x="860" y="269" width="58" height="20" rx="10" fill="#14532d"/><text x="870" y="283" class="chip">PATRON</text>
+
+  <text x="52" y="330" class="lane">APPLICATION + DOMAIN</text>
+  <rect x="48" y="346" width="1184" height="176" rx="18" fill="#0f1c31" stroke="#23324c"/>
+  <g filter="url(#shadow)">
+    <rect x="76" y="374" width="260" height="112" rx="14" fill="#17243a" stroke="#334155"/>
+    <text x="96" y="404" class="box-title">Auth + user services</text>
+    <text x="96" y="430" class="box-copy">BCrypt credentials · role lifecycle</text>
+    <text x="96" y="452" class="box-copy">owner-aware profile operations</text>
+    <rect x="370" y="374" width="260" height="112" rx="14" fill="#17243a" stroke="#334155"/>
+    <text x="390" y="404" class="box-title">Catalog service</text>
+    <text x="390" y="430" class="box-copy">ISBN uniqueness · filters · paging</text>
+    <text x="390" y="452" class="box-copy">availability event publisher</text>
+    <rect x="664" y="374" width="304" height="112" rx="14" fill="#17243a" stroke="#7c3aed"/>
+    <text x="684" y="404" class="box-title">Borrowing service</text>
+    <text x="684" y="430" class="box-copy">self/delegated borrow · owner return</text>
+    <text x="684" y="452" class="box-copy">active, overdue, history + reports</text>
+    <rect x="1002" y="374" width="202" height="112" rx="14" fill="#102c2a" stroke="#34d399"/>
+    <text x="1022" y="404" class="box-title">SSE stream</text>
+    <text x="1022" y="430" class="box-copy">book-availability-update</text>
+    <text x="1022" y="452" class="box-copy">reactive client delivery</text>
+  </g>
+  <path d="M1070 264 V350 H206 V374" class="flow"/>
+  <path d="M1070 264 V330 H500 V374" class="flow"/>
+  <path d="M1070 264 V312 H816 V374" class="flow"/>
+  <path d="M968 430 H1002" class="event"/>
+
+  <text x="52" y="560" class="lane">PERSISTENCE CONTRACT</text>
+  <rect x="48" y="576" width="1184" height="104" rx="18" fill="#0f1c31" stroke="#23324c"/>
+  <rect x="76" y="598" width="242" height="56" rx="12" fill="#17243a" stroke="#334155"/>
+  <text x="96" y="622" class="box-title">users + user_roles</text>
+  <text x="96" y="643" class="box-copy">identity and authorities</text>
+  <rect x="354" y="598" width="242" height="56" rx="12" fill="#17243a" stroke="#334155"/>
+  <text x="374" y="622" class="box-title">borrowings</text>
+  <text x="374" y="643" class="box-copy">dates · return state · ownership</text>
+  <rect x="632" y="598" width="242" height="56" rx="12" fill="#17243a" stroke="#334155"/>
+  <text x="652" y="622" class="box-title">books</text>
+  <text x="652" y="643" class="box-copy">catalog · ISBN · availability</text>
+  <rect x="910" y="598" width="294" height="56" rx="12" fill="#12263a" stroke="#22d3ee"/>
+  <text x="930" y="622" class="box-title">H2 local · PostgreSQL container</text>
+  <text x="930" y="643" class="box-copy">same Spring Data repository boundary</text>
+  <path d="M206 486 V598" class="flow"/>
+  <path d="M816 486 V548 H475 V598" class="flow"/>
+  <path d="M500 486 V548 H753 V598" class="flow"/>
+  <path d="M318 626 H354" class="flow"/>
+  <path d="M596 626 H632" class="flow"/>
+  <path d="M874 626 H910" class="flow"/>
+  <path d="M1103 486 V536 H160 V184" class="event"/>
+  <text x="918" y="546" class="note">borrow / return → Reactor sink → SSE clients</text>
+</svg>

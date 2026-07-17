@@ -28,6 +28,10 @@ This is a completed bootcamp reference project, not a hosted production service.
 
 ## Architecture
 
+![Library API architecture showing JWT authentication, RBAC, transactional services, persistence, and SSE availability updates](docs/library-api-architecture.svg)
+
+The request path and availability-event loop above are derived from the current security configuration, controllers, services, repositories, and JPA model. It is architecture proof rather than a hosted-UI claim: the project is an API reference intended to run locally.
+
 ```text
 HTTP / JSON
     |
