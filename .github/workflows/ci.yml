@@ -32,6 +32,12 @@ jobs:
       - name: Verify
         run: ./mvnw --batch-mode --no-transfer-progress verify
 
+      - name: Verify architecture asset
+        run: |
+          grep --quiet '<title id="title">' docs/library-api-architecture.svg
+          grep --quiet '<desc id="description">' docs/library-api-architecture.svg
+          grep --quiet 'width="1280" height="720"' docs/library-api-architecture.svg
+
       - name: Build container
         run: docker build --tag library-management-api:ci .
 
